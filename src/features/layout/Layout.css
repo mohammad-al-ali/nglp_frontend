@@ -1,0 +1,269 @@
+/**
+ * src/features/layout/Layout.css
+ * Light Theme IDE Layout - VS Code Inspired
+ * Color Palette: White backgrounds, dark text
+ * With smooth animations for panel transitions
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+.ide-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background-color: #ffffff;
+  color: #1e1e1e;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.ide-main-area {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+/* Primary Sidebar - Course Explorer */
+.primary-sidebar {
+  width: 250px;
+  background-color: #f5f5f5;
+  border-right: 1px solid #d0d0d0;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+  animation: slideInLeft 0.3s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+.primary-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.primary-sidebar::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+.primary-sidebar::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 4px;
+}
+
+.primary-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+/* Editor Area - Center Content */
+.editor-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Video Player Section - Top of Editor */
+.video-player-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f7ff;
+  border-bottom: 1px solid #d0d0d0;
+  padding: 20px;
+  overflow: hidden;
+  min-height: 200px;
+  transition: all 0.3s ease;
+}
+
+.video-player-section h2 {
+  color: #1e1e1e;
+  font-size: 18px;
+  margin: 0;
+}
+
+/* Details Panel - Bottom of Editor */
+.bottom-panel {
+  height: 200px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #d0d0d0;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.bottom-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #1e1e1e;
+}
+
+.bottom-panel p {
+  margin: 0;
+  font-size: 12px;
+  color: #666666;
+}
+
+/* Secondary Sidebar - AI Chat */
+.secondary-sidebar {
+  width: 300px;
+  background-color: #f5f5f5;
+  border-left: 1px solid #d0d0d0;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+  animation: slideInRight 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.secondary-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.secondary-sidebar::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+.secondary-sidebar::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 4px;
+}
+
+.secondary-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+.secondary-sidebar h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #1e1e1e;
+}
+
+.secondary-sidebar p {
+  margin: 0;
+  font-size: 12px;
+  color: #666666;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .primary-sidebar {
+    width: 200px;
+  }
+
+  .secondary-sidebar {
+    width: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  .primary-sidebar {
+    width: 180px;
+  }
+
+  .secondary-sidebar {
+    width: 200px;
+  }
+
+  .video-player-section {
+    padding: 10px;
+  }
+
+  .bottom-panel {
+    height: 150px;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .primary-sidebar {
+    width: 150px;
+  }
+
+  .secondary-sidebar {
+    display: none;
+  }
+
+  .bottom-panel {
+    height: 120px;
+  }
+}
