@@ -38,9 +38,11 @@ export default function Sidebar() {
         right: 0,
         height: '100vh',
         width: '280px',
-        backgroundColor: 'var(--surface)',
-        borderLeft: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-sm)',
+        background: 'var(--glass-bg)',
+        backdropFilter: 'blur(var(--glass-blur))',
+        WebkitBackdropFilter: 'blur(var(--glass-blur))',
+        borderLeft: '1px solid var(--glass-border)',
+        boxShadow: 'var(--glass-shadow)',
         display: 'flex',
         flexDirection: 'column',
         zIndex: 100,
@@ -55,7 +57,7 @@ export default function Sidebar() {
           display: 'flex', 
           alignItems: 'center', 
           padding: '0 24px', 
-          borderBottom: '1px solid var(--border)' 
+          borderBottom: '1px solid var(--glass-border)' 
         }}
       >
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
@@ -200,8 +202,8 @@ export default function Sidebar() {
       <div 
         style={{ 
           padding: '20px 24px', 
-          borderTop: '1px solid var(--border)',
-          backgroundColor: 'var(--bg)'
+          borderTop: '1px solid var(--glass-border)',
+          background: 'rgba(255, 255, 255, 0.05)'
         }}
       >
         {user ? (

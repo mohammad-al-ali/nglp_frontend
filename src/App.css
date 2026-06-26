@@ -60,7 +60,7 @@ button {
 
 .app-shell {
   min-height: 100vh;
-  background: var(--surface);
+  background: transparent;
 }
 
 .top-nav {
@@ -73,9 +73,10 @@ button {
   gap: 24px;
   min-height: 72px;
   padding: 0 40px;
-  background: rgba(255, 255, 255, 0.94);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(16px);
+  background: var(--glass-bg);
+  border-bottom: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
 .brand,

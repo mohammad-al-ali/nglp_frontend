@@ -85,7 +85,7 @@ export default function CategoriesManager() {
   if (!isAdmin) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', fontFamily: 'var(--font-sans)', direction: 'rtl', padding: '20px' }}>
-        <div className="premium-card animate-fade-in" style={{ maxWidth: '500px', width: '100%', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '40px 30px', textAlign: 'center', boxShadow: '0 10px 30px rgba(239, 68, 68, 0.08)' }}>
+        <div className="premium-card animate-fade-in" style={{ maxWidth: '500px', width: '100%', borderRadius: 'var(--radius-lg)', padding: '40px 30px', textAlign: 'center' }}>
           <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(239, 68, 68, 0.08)', display: 'grid', placeItems: 'center', margin: '0 auto 24px auto', color: 'var(--error)' }}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '40px', height: '40px' }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
@@ -227,16 +227,13 @@ export default function CategoriesManager() {
             className="premium-card"
             style={{
               padding: '28px',
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
               borderRadius: 'var(--radius-lg)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '18px',
-              boxShadow: 'var(--shadow-sm)'
+              gap: '18px'
             }}
           >
-            <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', margin: '0 0 10px 0', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', margin: '0 0 10px 0', borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px' }}>
               ➕ إضافة تصنيف أكاديمي جديد
             </h2>
             
@@ -308,13 +305,10 @@ export default function CategoriesManager() {
             className="premium-card"
             style={{
               padding: '28px',
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)',
-              boxShadow: 'var(--shadow-sm)'
+              borderRadius: 'var(--radius-lg)'
             }}
           >
-            <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', margin: '0 0 16px 0', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', margin: '0 0 16px 0', borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px' }}>
               🌳 الهيكل التنظيمي للتصنيفات الأكاديمية
             </h2>
             

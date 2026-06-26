@@ -830,9 +830,6 @@ export default function StudyRoom() {
             <section 
               className="premium-card"
               style={{
-                backgroundColor: 'var(--surface)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--border)',
                 display: 'flex',
                 flexDirection: 'column'
               }}

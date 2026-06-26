@@ -20,7 +20,7 @@ export default function PageFrame({ eyebrow, title, actions, children }) {
           justifyContent: 'space-between', 
           gap: '24px', 
           marginBottom: '32px',
-          borderBottom: '1px solid var(--border)',
+          borderBottom: '1px solid var(--glass-border)',
           paddingBottom: '20px'
         }}
       >

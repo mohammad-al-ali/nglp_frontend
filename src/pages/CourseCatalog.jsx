@@ -105,8 +105,8 @@ export default function CourseCatalog() {
             alignItems: 'center', 
             gap: '8px', 
             padding: '12px 16px',
-            backgroundColor: 'var(--surface-raised)',
-            border: '1px solid var(--border)',
+            background: 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid var(--glass-border)',
             borderRadius: 'var(--radius-md)',
             overflowX: 'auto',
             whiteSpace: 'nowrap',
@@ -179,7 +179,7 @@ export default function CourseCatalog() {
           {catalogState.loading ? (
             <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
               {[1, 2, 3].map((n) => (
-                <div className="premium-card animate-pulse" key={n} style={{ height: '300px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }} />
+                <div className="premium-card animate-pulse" key={n} style={{ height: '300px', borderRadius: 'var(--radius-lg)' }} />
               ))}
             </div>
           ) : catalogState.error ? (

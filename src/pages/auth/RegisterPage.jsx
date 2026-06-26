@@ -109,7 +109,6 @@ export default function RegisterPage() {
         minHeight: 'calc(100vh - var(--header-height))', 
         placeItems: 'center', 
         padding: '40px 24px',
-        backgroundColor: 'var(--bg)',
         fontFamily: 'var(--font-sans)',
         animation: 'slideIn var(--transition-normal) forwards'
       }}
@@ -120,8 +119,6 @@ export default function RegisterPage() {
           width: '100%',
           maxWidth: '520px',
           padding: '40px',
-          backgroundColor: 'var(--surface)',
-          border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)'
         }}
       >

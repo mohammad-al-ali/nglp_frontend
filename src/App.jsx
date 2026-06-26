@@ -141,17 +141,15 @@ function AppShell() {
       style={{
         display: 'flex',
         minHeight: '100vh',
-        direction: 'rtl',
-        backgroundColor: 'var(--bg)'
+        direction: 'rtl'
       }}
     >
       <Sidebar />
       <main 
         style={{ 
           flex: 1, 
-          marginRight: '280px', // exact offset for sidebar width
+          marginRight: '280px',
           minHeight: '100vh',
-          backgroundColor: 'var(--bg)',
           transition: 'margin-right var(--transition-normal)'
         }}
       >

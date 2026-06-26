@@ -318,7 +318,7 @@ export default function ManageLessons() {
         {loadingCoursesPicker ? (
           <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', direction: 'rtl' }}>
             {[1, 2, 3].map((n) => (
-              <div className="premium-card animate-pulse" key={n} style={{ height: '220px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }} />
+              <div className="premium-card animate-pulse" key={n} style={{ height: '220px', borderRadius: 'var(--radius-lg)' }} />
             ))}
           </div>
         ) : teacherCourses.length === 0 ? (
@@ -353,14 +353,11 @@ export default function ManageLessons() {
                 key={course.id}
                 className="premium-card"
                 style={{
-                  backgroundColor: 'var(--surface)',
-                  border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-lg)',
                   padding: '24px',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '14px',
-                  boxShadow: 'var(--shadow-sm)',
                   transition: 'transform var(--transition-fast), box-shadow var(--transition-fast)'
                 }}
                 onMouseEnter={(e) => {
@@ -458,8 +455,8 @@ export default function ManageLessons() {
     >
       {loadingCourse ? (
         <div style={{ display: 'grid', gap: '30px', gridTemplateColumns: '1fr 1fr', direction: 'rtl' }}>
-          <div className="premium-card animate-pulse" style={{ height: '350px', backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-lg)' }} />
-          <div className="premium-card animate-pulse" style={{ height: '350px', backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-lg)' }} />
+          <div className="premium-card animate-pulse" style={{ height: '350px', borderRadius: 'var(--radius-lg)' }} />
+          <div className="premium-card animate-pulse" style={{ height: '350px', borderRadius: 'var(--radius-lg)' }} />
         </div>
       ) : (
         <>
@@ -477,13 +474,10 @@ export default function ManageLessons() {
               className="premium-card"
               style={{
                 padding: '32px',
-                backgroundColor: 'var(--surface)',
-                border: '1px solid var(--border)',
                 borderRadius: 'var(--radius-lg)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '20px',
-                boxShadow: 'var(--shadow-sm)'
+                gap: '20px'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -656,8 +650,6 @@ export default function ManageLessons() {
                           className="premium-card"
                           style={{
                             padding: '14px',
-                            backgroundColor: 'var(--surface)',
-                            border: '1px solid var(--border)',
                             borderRadius: 'var(--radius-md)',
                             display: 'flex',
                             flexDirection: 'column',
@@ -724,13 +716,10 @@ export default function ManageLessons() {
               className="premium-card"
               style={{
                 padding: '32px',
-                backgroundColor: 'var(--surface)',
-                border: '1px solid var(--border)',
                 borderRadius: 'var(--radius-lg)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '20px',
-                boxShadow: 'var(--shadow-sm)',
                 minHeight: '400px'
               }}
             >
@@ -763,7 +752,7 @@ export default function ManageLessons() {
               {loadingLessons ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {[1, 2, 3].map((x) => (
-                    <div key={x} className="premium-card animate-pulse" style={{ height: '70px', backgroundColor: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }} />
+                    <div key={x} className="premium-card animate-pulse" style={{ height: '70px', borderRadius: 'var(--radius-md)' }} />
                   ))}
                 </div>
               ) : lessons.length === 0 ? (
@@ -788,21 +777,16 @@ export default function ManageLessons() {
                       className="premium-card"
                       style={{
                         padding: '16px',
-                        backgroundColor: 'var(--bg)',
-                        border: '1px solid var(--border)',
                         borderRadius: 'var(--radius-md)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        gap: '16px',
-                        transition: 'all var(--transition-fast)'
+                        gap: '16px'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--surface)';
                         e.currentTarget.style.borderColor = 'var(--primary-border)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--bg)';
                         e.currentTarget.style.borderColor = 'var(--border)';
                       }}
                     >
@@ -868,17 +852,15 @@ export default function ManageLessons() {
 
           {/* Unified Bottom Submit Action Row */}
           <div 
+            className="premium-card"
             style={{
               marginTop: '30px',
               padding: '24px',
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
               borderRadius: 'var(--radius-lg)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: '12px',
-              boxShadow: 'var(--shadow-sm)',
               direction: 'rtl'
             }}
           >

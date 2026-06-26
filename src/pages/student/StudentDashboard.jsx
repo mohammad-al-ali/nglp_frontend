@@ -151,8 +151,7 @@ export default function StudentDashboard() {
             gap: '24px',
             marginBottom: '36px',
             padding: '30px',
-            backgroundColor: 'var(--primary-soft)',
-            border: '1px solid var(--primary-border)',
+            border: '1px solid var(--glass-border)',
             borderRadius: 'var(--radius-lg)',
             flexWrap: 'wrap',
             direction: 'rtl'
@@ -211,7 +210,7 @@ export default function StudentDashboard() {
       {loading ? (
         <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', direction: 'rtl' }}>
           {[1, 2, 3].map((n) => (
-            <div className="premium-card animate-pulse" key={n} style={{ height: '220px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }} />
+            <div className="premium-card animate-pulse" key={n} style={{ height: '220px', borderRadius: 'var(--radius-lg)' }} />
           ))}
         </div>
       ) : visibleCourses.length === 0 ? (
@@ -266,21 +265,18 @@ export default function StudentDashboard() {
           }}
         >
           {visibleCourses.map((course) => (
-            <article 
-              className="premium-card" 
-              key={course.id}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: '18px',
-                padding: '24px',
-                backgroundColor: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow-sm)',
-                transition: 'transform var(--transition-fast), box-shadow var(--transition-fast)'
-              }}
+              <article 
+                className="premium-card" 
+                key={course.id}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '18px',
+                  padding: '24px',
+                  borderRadius: 'var(--radius-lg)',
+                  transition: 'transform var(--transition-fast), box-shadow var(--transition-fast)'
+                }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-2px)';
                 e.currentTarget.style.boxShadow = 'var(--shadow-md)';

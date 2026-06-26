@@ -258,10 +258,8 @@ export default function CourseDetails() {
           <div 
             className="premium-card"
             style={{
-              backgroundColor: 'var(--surface)',
               padding: '28px',
               borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--border)',
               display: 'flex',
               flexDirection: 'column',
               gap: '16px'
@@ -274,7 +272,7 @@ export default function CourseDetails() {
               {course.description || 'لم يتم إضافة وصف تفصيلي لهذا الكورس بعد.'}
             </p>
             {enrollStatus === 'enrolled' && (
-              <div style={{ marginTop: '14px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+              <div style={{ marginTop: '14px', borderTop: '1px solid var(--glass-border)', paddingTop: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>
                   <span>نسبة تقدمك في الدراسة</span>
                   <span>{course.progress || 0}%</span>
@@ -288,10 +286,8 @@ export default function CourseDetails() {
           <div 
             className="premium-card"
             style={{
-              backgroundColor: 'var(--surface)',
               padding: '28px',
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--border)'
+              borderRadius: 'var(--radius-lg)'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
@@ -405,8 +401,6 @@ export default function CourseDetails() {
           <div 
             className="premium-card"
             style={{
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
               borderRadius: 'var(--radius-lg)',
               padding: '24px',
               display: 'flex',

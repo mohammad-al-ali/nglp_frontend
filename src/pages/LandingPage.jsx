@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import api from '../services/api';
 import { categories as defaultCategories, courses as defaultCourses, categoryMatches, normalizeCategory, normalizeCourse } from '../utils/constants';
 import CourseGrid from '../components/CourseGrid';
+import GlassHeroPreview from '../components/GlassHeroPreview';
 
 export default function LandingPage() {
   const [catalogState, setCatalogState] = useState({ 
@@ -62,148 +63,7 @@ export default function LandingPage() {
 
   return (
     <div style={{ fontFamily: 'var(--font-sans)', animation: 'slideIn var(--transition-normal) forwards' }}>
-      {/* Premium Hero Section */}
-      <section 
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '48px',
-          alignItems: 'center',
-          minHeight: 'calc(80vh - var(--header-height))',
-          padding: '60px max(24px, calc((100vw - 1200px) / 2))',
-          background: 'linear-gradient(180deg, #ffffff 0%, var(--bg) 100%)'
-        }}
-      >
-        <div style={{ maxWidth: '620px' }}>
-          <p 
-            style={{
-              margin: '0 0 12px',
-              color: 'var(--primary)',
-              fontSize: '0.85rem',
-              fontWeight: '800',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em'
-            }}
-          >
-            منصة NGLP التعليمية
-          </p>
-          <h1 
-            style={{
-              fontSize: 'clamp(2.8rem, 5vw, 4.5rem)',
-              fontFamily: 'var(--font-display)',
-              lineHeight: '1.1',
-              color: 'var(--text-main)',
-              marginBottom: '20px'
-            }}
-          >
-            تعلم بذكاء مع<br/>
-            <span style={{ 
-              background: 'linear-gradient(90deg, var(--primary) 0%, #10b981 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontWeight: '800'
-            }}>المساعد الذكي</span>
-          </h1>
-          <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', marginBottom: '36px', lineHeight: '1.6' }}>
-            بيئة تعليمية متكاملة تدمج بين الدروس المرئية، النصوص المفرغة، والمساعد الذكي (AI Tutor) لتمنحك تجربة دراسية تفاعلية غير مسبوقة.
-          </p>
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <Link 
-              className="primary-button" 
-              to="/catalog"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '46px',
-                padding: '0 24px',
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--primary)',
-                color: 'var(--text-inverse)',
-                fontWeight: '700',
-                transition: 'all var(--transition-fast)'
-              }}
-            >
-              استكشف الكورسات
-            </Link>
-            <Link 
-              className="secondary-button" 
-              to="/dashboard"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '46px',
-                padding: '0 24px',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border)',
-                backgroundColor: 'var(--surface)',
-                color: 'var(--text-main)',
-                fontWeight: '700',
-                transition: 'all var(--transition-fast)'
-              }}
-            >
-              متابعة التعلم
-            </Link>
-          </div>
-        </div>
-
-        {/* Premium Graphic Illustration */}
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <div 
-            className="glassmorphic"
-            style={{ 
-              width: '100%', 
-              maxWidth: '520px', 
-              borderRadius: 'var(--radius-lg)', 
-              boxShadow: 'var(--shadow-premium)', 
-              border: '1px solid var(--border)',
-              padding: '16px',
-              animation: 'pulse 6s ease-in-out infinite'
-            }}
-          >
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--error)' }} />
-              <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--warning)' }} />
-              <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--success)' }} />
-            </div>
-            <div style={{ display: 'grid', gridTemplateRows: '1fr auto', gap: '12px' }}>
-              <div 
-                style={{ 
-                  aspectRatio: '16/10', 
-                  backgroundColor: '#0f172a', 
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <div 
-                  style={{ 
-                    width: '54px', 
-                    height: '54px', 
-                    borderRadius: '50%', 
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(4px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <span style={{ display: 'block', width: '0', height: '0', borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderLeft: '14px solid white', marginLeft: '4px' }} />
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '6px' }}>
-                <div style={{ height: '12px', width: '40%', backgroundColor: '#e2e8f0', borderRadius: '6px' }} />
-                <div style={{ height: '8px', width: '85%', backgroundColor: '#f1f5f9', borderRadius: '4px' }} />
-                <div style={{ height: '8px', width: '65%', backgroundColor: '#f1f5f9', borderRadius: '4px' }} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <GlassHeroPreview />
 
       {/* Categories Grid Section */}
       <section style={{ padding: '72px max(24px, calc((100vw - 1200px) / 2))' }}>
@@ -230,10 +90,7 @@ export default function LandingPage() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '24px',
-                  minHeight: '100px',
-                  backgroundColor: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-lg)'
+                  minHeight: '100px'
                 }}
               >
                 <div>

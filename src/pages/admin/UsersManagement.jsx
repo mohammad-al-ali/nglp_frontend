@@ -94,12 +94,9 @@ export default function UsersManagement() {
           style={{
             maxWidth: '500px',
             width: '100%',
-            backgroundColor: 'var(--surface)',
-            border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)',
             padding: '40px 30px',
-            textAlign: 'center',
-            boxShadow: '0 10px 30px rgba(239, 68, 68, 0.08)'
+            textAlign: 'center'
           }}
         >
           <div 
@@ -280,13 +277,10 @@ export default function UsersManagement() {
             className="premium-card" 
             style={{ 
               padding: '24px', 
-              backgroundColor: 'var(--surface)', 
-              border: '1px solid var(--border)', 
               borderRadius: 'var(--radius-lg)', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '20px',
-              boxShadow: 'var(--shadow-sm)'
+              gap: '20px'
             }}
           >
             <div style={{ width: '56px', height: '56px', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(37, 99, 235, 0.08)', color: 'var(--primary)', display: 'grid', placeItems: 'center' }}>
@@ -307,13 +301,10 @@ export default function UsersManagement() {
             className="premium-card" 
             style={{ 
               padding: '24px', 
-              backgroundColor: 'var(--surface)', 
-              border: '1px solid var(--border)', 
               borderRadius: 'var(--radius-lg)', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '20px',
-              boxShadow: 'var(--shadow-sm)'
+              gap: '20px'
             }}
           >
             <div style={{ width: '56px', height: '56px', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(34, 197, 94, 0.08)', color: 'var(--success)', display: 'grid', placeItems: 'center' }}>
@@ -334,13 +325,10 @@ export default function UsersManagement() {
             className="premium-card" 
             style={{ 
               padding: '24px', 
-              backgroundColor: 'var(--surface)', 
-              border: '1px solid var(--border)', 
               borderRadius: 'var(--radius-lg)', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '20px',
-              boxShadow: 'var(--shadow-sm)'
+              gap: '20px'
             }}
           >
             <div style={{ width: '56px', height: '56px', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6', display: 'grid', placeItems: 'center' }}>
@@ -361,13 +349,10 @@ export default function UsersManagement() {
             className="premium-card" 
             style={{ 
               padding: '24px', 
-              backgroundColor: 'var(--surface)', 
-              border: '1px solid var(--border)', 
               borderRadius: 'var(--radius-lg)', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '20px',
-              boxShadow: 'var(--shadow-sm)'
+              gap: '20px'
             }}
           >
             <div style={{ width: '56px', height: '56px', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(245, 158, 11, 0.08)', color: 'var(--warning)', display: 'grid', placeItems: 'center' }}>
@@ -388,11 +373,8 @@ export default function UsersManagement() {
         <div 
           className="premium-card"
           style={{
-            backgroundColor: 'var(--surface)',
-            border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)',
             padding: '28px',
-            boxShadow: 'var(--shadow-sm)',
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: '30px',
@@ -513,7 +495,7 @@ export default function UsersManagement() {
         </div>
 
         {/* 🎛️ التبويبات التفاعلية (Tabs) للتبديل بين إدارة المستخدمين وإدارة الكورسات */}
-        <div style={{ display: 'flex', borderBottom: '2px solid var(--border)', gap: '10px' }}>
+        <div style={{ display: 'flex', borderBottom: '2px solid var(--glass-border)', gap: '10px' }}>
           <button
             onClick={() => setActiveTab('users')}
             style={{
@@ -553,14 +535,11 @@ export default function UsersManagement() {
           <div 
             className="premium-card"
             style={{
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
               borderRadius: 'var(--radius-lg)',
-              overflow: 'hidden',
-              boxShadow: 'var(--shadow-sm)'
+              overflow: 'hidden'
             }}
           >
-            <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--glass-border)' }}>
               <h2 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-main)', margin: '0' }}>
                 دليل الأعضاء والمستخدمين الحاليين
               </h2>
@@ -572,14 +551,14 @@ export default function UsersManagement() {
             {loading ? (
               <div style={{ padding: '40px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {[1, 2, 3].map((n) => (
-                  <div key={n} style={{ height: '48px', backgroundColor: 'var(--bg)', borderRadius: 'var(--radius-md)' }} className="animate-pulse" />
+                  <div key={n} style={{ height: '48px', backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 'var(--radius-md)' }} className="animate-pulse" />
                 ))}
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
                   <thead>
-                    <tr style={{ backgroundColor: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
+                    <tr style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', borderBottom: '1px solid var(--border)' }}>
                       <th style={{ padding: '16px 28px', fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-muted)' }}>الاسم الكامل</th>
                       <th style={{ padding: '16px 28px', fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-muted)' }}>البريد الإلكتروني</th>
                       <th style={{ padding: '16px 28px', fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-muted)' }}>الدور الأكاديمي</th>
@@ -742,14 +721,11 @@ export default function UsersManagement() {
           <div 
             className="premium-card"
             style={{
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
               borderRadius: 'var(--radius-lg)',
-              overflow: 'hidden',
-              boxShadow: 'var(--shadow-sm)'
+              overflow: 'hidden'
             }}
           >
-            <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--glass-border)' }}>
               <h2 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-main)', margin: '0' }}>
                 التحكم المباشر في الكورسات الدراسية
               </h2>
@@ -761,7 +737,7 @@ export default function UsersManagement() {
             {loading ? (
               <div style={{ padding: '40px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {[1, 2, 3].map((n) => (
-                  <div key={n} style={{ height: '48px', backgroundColor: 'var(--bg)', borderRadius: 'var(--radius-md)' }} className="animate-pulse" />
+                  <div key={n} style={{ height: '48px', backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 'var(--radius-md)' }} className="animate-pulse" />
                 ))}
               </div>
             ) : courses.length === 0 ? (
@@ -772,7 +748,7 @@ export default function UsersManagement() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
                   <thead>
-                    <tr style={{ backgroundColor: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
+                    <tr style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', borderBottom: '1px solid var(--border)' }}>
                       <th style={{ padding: '16px 28px', fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-muted)' }}>عنوان الكورس الأكاديمي</th>
                       <th style={{ padding: '16px 28px', fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-muted)' }}>مدرس المادة</th>
                       <th style={{ padding: '16px 28px', fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-muted)' }}>القسم / التصنيف</th>

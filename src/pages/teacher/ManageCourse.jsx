@@ -143,7 +143,7 @@ export default function ManageCourse() {
     >
       {loadingCourse ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '100px 0', direction: 'rtl' }}>
-          <div className="premium-card animate-pulse" style={{ width: '100%', maxWidth: '640px', height: '400px', backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-lg)' }} />
+          <div className="premium-card animate-pulse" style={{ width: '100%', maxWidth: '640px', height: '400px', borderRadius: 'var(--radius-lg)' }} />
         </div>
       ) : (
         <div 
@@ -161,13 +161,10 @@ export default function ManageCourse() {
               width: '100%',
               maxWidth: '640px',
               padding: '40px',
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
               borderRadius: 'var(--radius-lg)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '24px',
-              boxShadow: 'var(--shadow-sm)'
+              gap: '24px'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

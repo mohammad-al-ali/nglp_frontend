@@ -257,13 +257,10 @@ export default function CourseBuilder() {
           className="premium-card"
           style={{
             padding: '32px',
-            backgroundColor: 'var(--surface)',
-            border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '20px',
-            boxShadow: 'var(--shadow-sm)'
+            gap: '20px'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -369,13 +366,10 @@ export default function CourseBuilder() {
           className="premium-card"
           style={{
             padding: '32px',
-            backgroundColor: 'var(--surface)',
-            border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
             flexDirection: 'column',
             gap: '20px',
-            boxShadow: 'var(--shadow-sm)',
             transition: 'opacity var(--transition-normal)',
             position: 'relative'
           }}
@@ -550,8 +544,6 @@ export default function CourseBuilder() {
                       className="premium-card"
                       style={{
                         padding: '16px',
-                        backgroundColor: 'var(--surface)',
-                        border: '1px solid var(--border)',
                         borderRadius: 'var(--radius-md)',
                         display: 'flex',
                         flexDirection: 'column',
@@ -620,17 +612,15 @@ export default function CourseBuilder() {
 
       {/* Unified Bottom Submit Action Row */}
       <div 
+        className="premium-card"
         style={{
           marginTop: '30px',
           padding: '24px',
-          backgroundColor: 'var(--surface)',
-          border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           gap: '12px',
-          boxShadow: 'var(--shadow-sm)',
           direction: 'rtl'
         }}
       >

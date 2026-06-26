@@ -119,7 +119,7 @@ export default function TeacherOverview() {
       {loading ? (
         <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', direction: 'rtl' }}>
           {[1, 2].map((n) => (
-            <div className="premium-card animate-pulse" key={n} style={{ height: '300px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }} />
+            <div className="premium-card animate-pulse" key={n} style={{ height: '300px', borderRadius: 'var(--radius-lg)' }} />
           ))}
         </div>
       ) : teacherCourses.length === 0 ? (
@@ -149,14 +149,11 @@ export default function TeacherOverview() {
               key={course.id}
               className="premium-card"
               style={{
-                backgroundColor: 'var(--surface)',
-                border: '1px solid var(--border)',
                 borderRadius: 'var(--radius-lg)',
                 padding: '24px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '16px',
-                boxShadow: 'var(--shadow-sm)',
                 transition: 'transform var(--transition-fast), box-shadow var(--transition-fast)'
               }}
               onMouseEnter={(e) => {
