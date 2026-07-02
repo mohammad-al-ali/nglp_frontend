@@ -593,7 +593,7 @@ export default function UsersManagement() {
                               fontSize: '0.85rem',
                               fontWeight: '700',
                               color: 'var(--text-main)',
-                              backgroundColor: 'var(--surface)',
+                              backgroundColor: 'var(--glass-input-bg)',
                               border: '1px solid var(--border)',
                               borderRadius: 'var(--radius-md)',
                               outline: 'none',

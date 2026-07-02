@@ -184,7 +184,7 @@ export default function CourseCatalog() {
             </div>
           ) : catalogState.error ? (
             /* Server database connection failure UI */
-            <div style={{ padding: '60px 20px', textAlign: 'center', backgroundColor: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 'var(--radius-lg)' }}>
+            <div className="premium-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
               <span style={{ fontSize: '2.5rem' }}>🔌</span>
               <h3 style={{ fontSize: '1.2rem', fontWeight: '800', marginTop: '12px', color: 'var(--text-main)' }}>تعذر الاتصال بقاعدة البيانات</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
@@ -193,7 +193,7 @@ export default function CourseCatalog() {
             </div>
           ) : filteredCourses.length === 0 ? (
             /* Empty Database State UI in Arabic RTL */
-            <div style={{ padding: '60px 20px', textAlign: 'center', backgroundColor: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 'var(--radius-lg)' }}>
+            <div className="premium-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
               <span style={{ fontSize: '2.2rem' }}>📂</span>
               <h3 style={{ fontSize: '1.2rem', fontWeight: '800', marginTop: '12px', color: 'var(--text-main)' }}>لا توجد كورسات متاحة</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>لم يتم نشر أي كورسات تعليمية في قاعدة البيانات حالياً.</p>

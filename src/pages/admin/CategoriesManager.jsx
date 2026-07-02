@@ -257,7 +257,7 @@ export default function CategoriesManager() {
                   padding: '0 12px',
                   fontSize: '0.925rem',
                   color: 'var(--text-main)',
-                  backgroundColor: 'var(--surface)',
+                  backgroundColor: 'var(--glass-input-bg)',
                   border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-md)',
                   outline: 'none',
@@ -387,7 +387,7 @@ function CategoryNode({ category, onDelete, onRename }) {
                 fontSize: '0.88rem',
                 border: '1px solid var(--primary)',
                 borderRadius: '4px',
-                backgroundColor: 'var(--surface)',
+                backgroundColor: 'var(--glass-input-bg)',
                 color: 'var(--text-main)',
                 outline: 'none',
                 width: '180px'

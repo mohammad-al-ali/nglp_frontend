@@ -181,7 +181,7 @@ export default function RegisterPage() {
                 padding: '0 12px',
                 fontSize: '0.95rem',
                 color: 'var(--text-main)',
-                backgroundColor: 'var(--surface)',
+                backgroundColor: 'var(--glass-input-bg)',
                 border: '1px solid var(--border)',
                 borderRadius: 'var(--radius-md)',
                 outline: 'none',

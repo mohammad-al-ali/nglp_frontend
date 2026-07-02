@@ -323,12 +323,10 @@ export default function ManageLessons() {
           </div>
         ) : teacherCourses.length === 0 ? (
           <div 
+            className="premium-card"
             style={{ 
               padding: '60px 20px', 
               textAlign: 'center', 
-              backgroundColor: 'var(--surface)', 
-              border: '1px solid var(--border)', 
-              borderRadius: 'var(--radius-lg)',
               direction: 'rtl'
             }}
           >
@@ -527,7 +525,7 @@ export default function ManageLessons() {
                     padding: '12px',
                     fontSize: '0.9rem',
                     color: 'var(--text-main)',
-                    backgroundColor: 'var(--surface)',
+                    backgroundColor: 'var(--glass-input-bg)',
                     border: '1px solid var(--border)',
                     borderRadius: 'var(--radius-md)',
                     outline: 'none',
@@ -756,12 +754,10 @@ export default function ManageLessons() {
                   ))}
                 </div>
               ) : lessons.length === 0 ? (
-                <div style={{ 
+                <div className="premium-card" style={{ 
                   padding: '40px 16px', 
                   textAlign: 'center', 
-                  border: '1px dashed var(--border)', 
-                  borderRadius: 'var(--radius-md)',
-                  backgroundColor: 'var(--bg)'
+                  borderRadius: 'var(--radius-md)'
                 }}>
                   <span style={{ fontSize: '2rem' }}>📭</span>
                   <strong style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-main)', marginTop: '10px' }}>لا توجد دروس مضافة حالياً</strong>

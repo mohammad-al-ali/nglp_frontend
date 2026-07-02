@@ -34,7 +34,7 @@ export default function TextField({ label, value, onChange, type = 'text', error
           padding: '0 14px',
           fontSize: '0.95rem',
           color: 'var(--text-main)',
-          backgroundColor: 'var(--surface)',
+          backgroundColor: 'var(--glass-input-bg)',
           border: error ? '1.5px solid var(--error)' : '1px solid var(--border)',
           borderRadius: 'var(--radius-md)',
           outline: 'none',

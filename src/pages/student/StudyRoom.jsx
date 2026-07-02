@@ -16,6 +16,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import api, { getCurrentUserId } from '../../services/api';
 import { normalizeCourse, normalizeLesson, resolveMediaUrl } from '../../utils/constants';
+import { Bot, Sparkles, FileText, AlignLeft, BookOpen, Clock, X, ChevronUp, ChevronLeft, ArrowRight, Video, PanelLeftOpen, Settings, Send, AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function StudyRoom() {
   const { courseId, lessonId } = useParams();
@@ -280,7 +281,6 @@ export default function StudyRoom() {
           justifyContent: 'center', 
           width: '100vw', 
           height: '100vh', 
-          backgroundColor: 'var(--bg)',
           color: 'var(--text-main)',
           direction: 'rtl'
         }}
@@ -304,7 +304,6 @@ export default function StudyRoom() {
           justifyContent: 'center', 
           width: '100vw', 
           height: '100vh', 
-          backgroundColor: 'var(--bg)',
           color: 'var(--text-main)',
           padding: '24px',
           textAlign: 'center',
@@ -312,7 +311,7 @@ export default function StudyRoom() {
           fontFamily: 'var(--font-sans)'
         }}
       >
-        <span style={{ fontSize: '3rem', marginBottom: '16px' }}>⚠️</span>
+        <AlertTriangle size={48} style={{ marginBottom: '16px', color: 'var(--warning)' }} />
         <h2 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '12px' }}>فشل تحميل مساحة الدرس</h2>
         <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', maxWidth: '480px', marginBottom: '24px', lineHeight: '1.6' }}>
           {error || 'لم يتم العثور على بيانات هذا الدرس في قاعدة البيانات.'}
@@ -331,7 +330,7 @@ export default function StudyRoom() {
               cursor: 'pointer'
             }}
           >
-            إعادة المحاولة 🔄
+            <RefreshCw size={16} /> إعادة المحاولة
           </button>
           <Link 
             to="/dashboard"
@@ -365,7 +364,6 @@ export default function StudyRoom() {
         height: '100vh', 
         overflow: 'hidden', 
         color: 'var(--text-main)', 
-        backgroundColor: 'var(--bg)',
         fontFamily: 'var(--font-sans)',
         direction: 'rtl'
       }}
@@ -420,21 +418,6 @@ export default function StudyRoom() {
           background-color: var(--primary-soft) !important;
           border-color: var(--primary-border) !important;
         }
-        .activity-btn {
-          background: none;
-          border: none;
-          cursor: pointer;
-          display: flex;
-          alignItems: center;
-          justify-content: center;
-          width: 100%;
-          min-height: 48px;
-          transition: all var(--transition-fast);
-          position: relative;
-        }
-        .activity-btn:hover {
-          background-color: var(--surface);
-        }
       `}</style>
 
       {/* Top IDE Header navigation Breadcrumbs bar */}
@@ -445,10 +428,11 @@ export default function StudyRoom() {
           justifyContent: 'space-between',
           height: '52px',
           padding: '0 20px',
-          backgroundColor: 'var(--surface)',
-          borderBottom: '1px solid var(--border)',
+          backgroundColor: 'var(--glass-bg)',
+          backdropFilter: 'blur(var(--glass-blur))',
+          WebkitBackdropFilter: 'blur(var(--glass-blur))',
+          borderBottom: '1px solid var(--glass-border)',
           flex: '0 0 auto',
-          boxShadow: 'var(--shadow-sm)',
           zIndex: 10
         }}
       >
@@ -471,9 +455,9 @@ export default function StudyRoom() {
               textDecoration: 'none'
             }}
           >
-            ⬅️ لوحة الطلاب
+            <ArrowRight size={16} /> لوحة الطلاب
           </Link>
-          <span style={{ color: 'var(--border)', fontSize: '1rem' }}>|</span>
+          <ChevronLeft size={14} style={{ color: 'var(--text-muted)' }} />
           <span style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-muted)' }}>
             {course?.title || 'كورس تعليمي'}
           </span>
@@ -483,8 +467,94 @@ export default function StudyRoom() {
           </span>
         </div>
 
-        {/* Server status & mini toggles */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {/* Toggle buttons + Server status */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            onClick={() => setShowLessons(!showLessons)}
+            title="قائمة الدروس"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '32px',
+              height: '32px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: showLessons ? 'var(--primary-soft)' : 'transparent',
+              color: showLessons ? 'var(--primary)' : 'var(--text-muted)',
+              cursor: 'pointer',
+              transition: 'all var(--transition-fast)'
+            }}
+            onMouseEnter={(e) => { if (!showLessons) e.currentTarget.style.background = 'var(--surface-raised)'; }}
+            onMouseLeave={(e) => { if (!showLessons) e.currentTarget.style.background = 'transparent'; }}
+          >
+            <PanelLeftOpen size={18} />
+          </button>
+          <button
+            onClick={() => setShowTutor(!showTutor)}
+            title="مساعد الذكاء الاصطناعي"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '32px',
+              height: '32px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: showTutor ? 'var(--primary-soft)' : 'transparent',
+              color: showTutor ? 'var(--primary)' : 'var(--text-muted)',
+              cursor: 'pointer',
+              transition: 'all var(--transition-fast)'
+            }}
+            onMouseEnter={(e) => { if (!showTutor) e.currentTarget.style.background = 'var(--surface-raised)'; }}
+            onMouseLeave={(e) => { if (!showTutor) e.currentTarget.style.background = 'transparent'; }}
+          >
+            <Bot size={18} />
+          </button>
+          <button
+            onClick={() => setShowDetails(!showDetails)}
+            title="تفاصيل الدرس"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '32px',
+              height: '32px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: showDetails ? 'var(--primary-soft)' : 'transparent',
+              color: showDetails ? 'var(--primary)' : 'var(--text-muted)',
+              cursor: 'pointer',
+              transition: 'all var(--transition-fast)'
+            }}
+            onMouseEnter={(e) => { if (!showDetails) e.currentTarget.style.background = 'var(--surface-raised)'; }}
+            onMouseLeave={(e) => { if (!showDetails) e.currentTarget.style.background = 'transparent'; }}
+          >
+            <FileText size={18} />
+          </button>
+          <button
+            title="إعدادات مساحة التعلم"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '32px',
+              height: '32px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              transition: 'all var(--transition-fast)'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-raised)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <Settings size={18} />
+          </button>
+
+          <span style={{ width: '1px', height: '20px', backgroundColor: 'var(--glass-border)', margin: '0 6px' }} />
+
           {networkSource === 'backend' ? (
             <span 
               style={{
@@ -511,14 +581,14 @@ export default function StudyRoom() {
                 gap: '6px',
                 fontSize: '0.74rem',
                 fontWeight: '800',
-                color: '#b45309',
-                backgroundColor: '#fffbeb',
+                color: 'var(--warning)',
+                backgroundColor: 'var(--warning-soft)',
                 padding: '4px 10px',
                 borderRadius: 'var(--radius-full)',
-                border: '1px solid #fde68a'
+                border: '1px solid var(--warning-border)'
               }}
             >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#d97706', display: 'inline-block' }} />
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--warning)', display: 'inline-block' }} />
               وضع محلي بدون خادم
             </span>
           )}
@@ -534,8 +604,10 @@ export default function StudyRoom() {
             width: showTutor ? '380px' : '0px',
             overflow: 'hidden',
             transition: 'width 0.3s ease-in-out, border-left 0.3s ease-in-out',
-            backgroundColor: 'var(--surface)',
-            borderLeft: showTutor ? '1px solid var(--border)' : 'none',
+            backgroundColor: 'var(--glass-bg)',
+            backdropFilter: 'blur(var(--glass-blur))',
+            WebkitBackdropFilter: 'blur(var(--glass-blur))',
+            borderLeft: showTutor ? '1px solid var(--glass-border)' : 'none',
             display: 'flex',
             flexDirection: 'column',
             flexShrink: 0
@@ -550,19 +622,19 @@ export default function StudyRoom() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '14px 18px',
-                borderBottom: '1px solid var(--border)',
-                backgroundColor: 'var(--surface-raised)'
+                borderBottom: '1px solid var(--glass-border)',
+                backgroundColor: 'var(--glass-bg)'
               }}
             >
               <span style={{ fontSize: '0.85rem', fontWeight: '900', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🤖</span> مساعد التعلم الذكي (AI Tutor)
+                <Bot size={18} /> مساعد التعلم الذكي (AI Tutor)
               </span>
               <button 
                 onClick={() => setShowTutor(false)}
                 title="إغلاق قسم المحادثة"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-muted)' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
             
@@ -665,10 +737,10 @@ export default function StudyRoom() {
               onSubmit={sendMessage}
               style={{ 
                 padding: '14px', 
-                borderTop: '1px solid var(--border)', 
+                borderTop: '1px solid var(--glass-border)', 
                 display: 'flex', 
                 gap: '8px',
-                backgroundColor: 'var(--surface-raised)'
+                backgroundColor: 'var(--glass-bg)'
               }}
             >
               <input 
@@ -682,10 +754,10 @@ export default function StudyRoom() {
                   minHeight: '38px',
                   padding: '0 12px',
                   fontSize: '0.88rem',
-                  border: '1px solid var(--border)',
+                  border: '1px solid var(--glass-border)',
                   borderRadius: 'var(--radius-md)',
                   outline: 'none',
-                  backgroundColor: 'var(--surface)',
+                  backgroundColor: 'var(--glass-input-bg)',
                   color: 'var(--text-main)',
                   transition: 'all var(--transition-fast)'
                 }}
@@ -708,7 +780,7 @@ export default function StudyRoom() {
                   transition: 'all var(--transition-fast)'
                 }}
               >
-                إرسال
+                <Send size={14} /> إرسال
               </button>
             </form>
           </div>
@@ -761,7 +833,7 @@ export default function StudyRoom() {
                 }}
               >
                 <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.08)', display: 'grid', placeItems: 'center' }}>
-                  <span style={{ fontSize: '1.8rem' }}>🎬</span>
+                  <Video size={28} style={{ color: 'rgba(255,255,255,0.6)' }} />
                 </div>
                 <strong style={{ fontSize: '1.15rem', fontWeight: '800' }}>لم يتم رفع فيديو لهذا الدرس بعد</strong>
                 <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{activeLesson.title}</p>
@@ -814,7 +886,7 @@ export default function StudyRoom() {
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              <span>🤖</span> ألم تفهم هذه النقطة؟ اسألني
+              <Sparkles size={16} /> لم تفهم هذه النقطة؟
             </button>
           </div>
 
@@ -838,8 +910,8 @@ export default function StudyRoom() {
               <div 
                 style={{
                   display: 'flex',
-                  borderBottom: '1px solid var(--border)',
-                  backgroundColor: 'var(--surface-raised)',
+                  borderBottom: '1px solid var(--glass-border)',
+                  backgroundColor: 'var(--glass-bg)',
                   borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
                   padding: '14px 20px',
                   justifyContent: 'space-between',
@@ -847,13 +919,13 @@ export default function StudyRoom() {
                 }}
               >
                 <h3 style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  📄 تفاصيل الدرس وتفريغ الفيديو
+                  <FileText size={16} /> تفاصيل الدرس وتفريغ الفيديو
                 </h3>
                 <button 
                   onClick={() => setShowDetails(false)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: '700' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: '700' }}
                 >
-                  طوي ✕
+                  طوي <ChevronUp size={14} />
                 </button>
               </div>
 
@@ -866,7 +938,7 @@ export default function StudyRoom() {
                 {/* Automated Transcript */}
                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
                   <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 8px 0' }}>
-                    <span>📝</span> تفريغ الفيديو التلقائي
+                    <AlignLeft size={16} /> تفريغ الفيديو التلقائي
                   </h4>
                   <div 
                     style={{ 
@@ -895,8 +967,10 @@ export default function StudyRoom() {
             width: showLessons ? '280px' : '0px',
             overflow: 'hidden',
             transition: 'width 0.3s ease-in-out, border-left 0.3s ease-in-out',
-            backgroundColor: 'var(--surface)',
-            borderLeft: showLessons ? '1px solid var(--border)' : 'none',
+            backgroundColor: 'var(--glass-bg)',
+            backdropFilter: 'blur(var(--glass-blur))',
+            WebkitBackdropFilter: 'blur(var(--glass-blur))',
+            borderLeft: showLessons ? '1px solid var(--glass-border)' : 'none',
             display: 'flex',
             flexDirection: 'column',
             flexShrink: 0
@@ -910,18 +984,18 @@ export default function StudyRoom() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '14px 18px',
-                borderBottom: '1px solid var(--border)',
-                backgroundColor: 'var(--surface-raised)'
+                borderBottom: '1px solid var(--glass-border)',
+                backgroundColor: 'var(--glass-bg)'
               }}
             >
-              <span style={{ fontSize: '0.8rem', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                📋 منهج الكورس الدراسي ({lessons.length})
+              <span style={{ fontSize: '0.8rem', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <BookOpen size={14} /> المنهج ({lessons.length})
               </span>
               <button 
                 onClick={() => setShowLessons(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.85rem' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
             
@@ -989,8 +1063,8 @@ export default function StudyRoom() {
                         >
                           {lesson.title}
                         </strong>
-                        <small style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '600' }}>
-                          ⏱️ {lesson.duration || '00:00'}
+                        <small style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <Clock size={12} /> {lesson.duration || '00:00'}
                         </small>
                       </div>
                     </button>
@@ -1001,81 +1075,7 @@ export default function StudyRoom() {
           </div>
         </aside>
 
-        {/* Panel 4: Leftmost Pane - Sleek, Thin VS Code-Style Activity Sidebar containing ONLY icons */}
-        <aside 
-          style={{
-            width: '60px',
-            backgroundColor: 'var(--surface-raised)',
-            borderRight: '1px solid var(--border)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '16px 0',
-            justifyContent: 'space-between',
-            flexShrink: 0,
-            height: '100%'
-          }}
-        >
-          {/* Top Toggles Stack */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', alignItems: 'center' }}>
-            
-            {/* 1. Toggle Syllabus (قائمة الدروس) */}
-            <button
-              onClick={() => setShowLessons(!showLessons)}
-              className="activity-btn"
-              title="تفعيل/طوي قائمة الدروس"
-              style={{
-                color: showLessons ? 'var(--primary)' : 'var(--text-muted)',
-                borderRight: showLessons ? '3px solid var(--primary)' : '3px solid transparent'
-              }}
-            >
-              <span style={{ fontSize: '1.3rem' }}>📁</span>
-            </button>
 
-            {/* 2. Toggle AI Chat (مساعد الذكاء الاصطناعي) */}
-            <button
-              onClick={() => setShowTutor(!showTutor)}
-              className="activity-btn"
-              title="تفعيل/طوي مساعد الذكاء الاصطناعي"
-              style={{
-                color: showTutor ? 'var(--primary)' : 'var(--text-muted)',
-                borderRight: showTutor ? '3px solid var(--primary)' : '3px solid transparent'
-              }}
-            >
-              <span style={{ fontSize: '1.3rem' }}>💬</span>
-            </button>
-
-            {/* 3. Toggle Lesson Details (تفاصيل الدرس) */}
-            <button
-              onClick={() => setShowDetails(!showDetails)}
-              className="activity-btn"
-              title="تفعيل/طوي تفاصيل الدرس"
-              style={{
-                color: showDetails ? 'var(--primary)' : 'var(--text-muted)',
-                borderRight: showDetails ? '3px solid var(--primary)' : '3px solid transparent'
-              }}
-            >
-              <span style={{ fontSize: '1.3rem' }}>📄</span>
-            </button>
-          </div>
-
-          {/* Bottom Settings Icon */}
-          <div 
-            style={{ 
-              color: 'var(--text-muted)', 
-              fontSize: '1.25rem', 
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '100%',
-              minHeight: '40px'
-            }} 
-            title="إعدادات مساحة التعلم"
-          >
-            ⚙️
-          </div>
-        </aside>
 
       </div>
     </div>

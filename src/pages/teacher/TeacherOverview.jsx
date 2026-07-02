@@ -123,12 +123,9 @@ export default function TeacherOverview() {
           ))}
         </div>
       ) : teacherCourses.length === 0 ? (
-        <div style={{ 
+        <div className="premium-card" style={{ 
           padding: '60px 20px', 
           textAlign: 'center', 
-          backgroundColor: 'var(--surface)', 
-          border: '1px solid var(--border)', 
-          borderRadius: 'var(--radius-lg)',
           direction: 'rtl'
         }}>
           <span style={{ fontSize: '2.5rem' }}>🎓</span>

@@ -1,9 +1,5 @@
 .glass-preview-container {
-  --gp-radius: 16px;
-  --gp-glass-bg: rgba(255, 255, 255, 0.12);
-  --gp-glass-border: rgba(255, 255, 255, 0.25);
-  --gp-glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-  --gp-blur: 12px;
+  --gp-radius: var(--radius-lg);
 
   position: relative;
   overflow: hidden;
@@ -77,11 +73,11 @@
 }
 
 .glass-preview-card {
-  background: var(--gp-glass-bg);
-  backdrop-filter: blur(var(--gp-blur));
-  -webkit-backdrop-filter: blur(var(--gp-blur));
-  border: 1px solid var(--gp-glass-border);
-  box-shadow: var(--gp-glass-shadow);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
   border-radius: var(--gp-radius);
   padding: 40px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -89,7 +85,7 @@
 
 .glass-preview-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: var(--glass-shadow-hover);
 }
 
 .glass-preview-badge {

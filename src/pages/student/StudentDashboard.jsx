@@ -216,12 +216,10 @@ export default function StudentDashboard() {
       ) : visibleCourses.length === 0 ? (
         /* Proper Empty State UI in RTL Arabic */
         <div 
+          className="premium-card"
           style={{ 
             padding: '60px 20px', 
             textAlign: 'center', 
-            backgroundColor: 'var(--surface)', 
-            border: '1px dashed var(--border)', 
-            borderRadius: 'var(--radius-lg)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
