@@ -247,3 +247,35 @@ export function resolveMediaUrl(url) {
   
   return `${cleanBase}${relativePath}`;
 }
+
+export function normalizeQuizChoice(choice) {
+  return {
+    id: choice.id,
+    choiceText: choice.choiceText,
+    isCorrect: choice.isCorrect,
+  };
+}
+
+export function normalizeQuestion(question) {
+  return {
+    id: question.id,
+    questionText: question.questionText,
+    difficultyWeight: question.difficultyWeight,
+    orderIndex: question.orderIndex,
+    explanation: question.explanation,
+    choices: (question.choices || []).map(normalizeQuizChoice),
+  };
+}
+
+export function normalizeQuiz(quiz) {
+  return {
+    id: quiz.id,
+    lessonId: quiz.lessonId,
+    title: quiz.title || '???? ???? ?????',
+    status: quiz.status || 'DRAFT',
+    createdByTeacherId: quiz.createdByTeacherId,
+    createdAt: quiz.createdAt,
+    showAnswersAfterSubmit: quiz.showAnswersAfterSubmit ?? true,
+    questions: (quiz.questions || []).map(normalizeQuestion),
+  };
+}

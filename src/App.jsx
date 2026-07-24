@@ -1,4 +1,4 @@
-import {
+﻿import {
   BrowserRouter,
   Navigate,
   Outlet,
@@ -25,6 +25,10 @@ import ManageCourse from './pages/teacher/ManageCourse';
 import ManageLessons from './pages/teacher/ManageLessons';
 import CategoriesManager from './pages/admin/CategoriesManager';
 import UsersManagement from './pages/admin/UsersManagement';
+import QuizManager from './pages/teacher/QuizManager';
+import QuizEditor from './pages/teacher/QuizEditor';
+import QuizTaker from './pages/student/QuizTaker';
+import StudentQuizList from './pages/student/StudentQuizList';
 
 function App() {
   return (
@@ -93,6 +97,22 @@ function App() {
             }
           />
           <Route
+            path="/teacher/quiz-manager/:courseId/:lessonId"
+            element={
+              <RoleRoute allowedRoles={[ROLE_TEACHER]}>
+                <QuizManager />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/teacher/quizzes/:quizId"
+            element={
+              <RoleRoute allowedRoles={[ROLE_TEACHER]}>
+                <QuizEditor />
+              </RoleRoute>
+            }
+          />
+          <Route
             path="/admin/categories"
             element={
               <RoleRoute allowedRoles={[ROLE_ADMIN]}>
@@ -122,6 +142,22 @@ function App() {
           element={
             <RoleRoute allowedRoles={[ROLE_STUDENT]}>
               <StudyRoom />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/study/:courseId/lesson/:lessonId/quizzes"
+          element={
+            <RoleRoute allowedRoles={[ROLE_STUDENT]}>
+              <StudentQuizList />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/study/:courseId/lesson/:lessonId/quiz/:quizId"
+          element={
+            <RoleRoute allowedRoles={[ROLE_STUDENT]}>
+              <QuizTaker />
             </RoleRoute>
           }
         />
@@ -160,3 +196,7 @@ function AppShell() {
 }
 
 export default App;
+
+
+
+

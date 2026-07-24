@@ -856,6 +856,40 @@ export default function StudyRoom() {
               {activeLesson.title}
             </h1>
             
+            {/* Quiz Button */}
+            <Link
+              to={`/study/${courseId}/lesson/${lessonId}/quizzes`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                minHeight: '38px',
+                padding: '0 16px',
+                backgroundColor: 'var(--success-soft)',
+                color: '#065f46',
+                border: '1px solid var(--success-border)',
+                borderRadius: 'var(--radius-full)',
+                fontSize: '0.84rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                boxShadow: 'var(--shadow-sm)',
+                transition: 'all var(--transition-fast)',
+                textDecoration: 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--success)';
+                e.currentTarget.style.color = '#ffffff';
+                e.currentTarget.style.transform = 'scale(1.02)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--success-soft)';
+                e.currentTarget.style.color = '#065f46';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <FileText size={16} /> الاختبارات
+            </Link>
+
             {/* The Smart AI Prompt Button */}
             <button
               onClick={handleSmartPrompt}

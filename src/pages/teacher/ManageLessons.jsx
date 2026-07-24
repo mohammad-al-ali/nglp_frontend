@@ -814,6 +814,33 @@ export default function ManageLessons() {
                         </div>
                       </div>
 
+                      <Link
+                        to={`/teacher/quiz-manager/${courseId}/${lesson.id}`}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: 'rgba(37, 99, 235, 0.05)',
+                          color: 'var(--primary)',
+                          border: '1px solid rgba(37, 99, 235, 0.1)',
+                          borderRadius: 'var(--radius-md)',
+                          fontSize: '0.75rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          transition: 'all var(--transition-fast)',
+                          flexShrink: 0,
+                          textDecoration: 'none'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.1)';
+                          e.currentTarget.style.borderColor = 'var(--primary)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.05)';
+                          e.currentTarget.style.borderColor = 'rgba(37, 99, 235, 0.1)';
+                        }}
+                      >
+                        الاختبارات
+                      </Link>
+
                       <button
                         onClick={() => handleDeleteLesson(lesson.id, lesson.title)}
                         style={{
