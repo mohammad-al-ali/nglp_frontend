@@ -14,8 +14,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import api, { getCurrentUserId } from '../../services/api';
+import api, { getCurrentUserId, getStoredUser } from '../../services/api';
 import { normalizeCourse, normalizeLesson, resolveMediaUrl } from '../../utils/constants';
+import {
+  useFetchProviders,
+  useFetchUserSettings,
+  useUpdateUserSettings,
+} from '../../hooks/useQuiz';
 import { Bot, Sparkles, FileText, AlignLeft, BookOpen, Clock, X, ChevronUp, ChevronLeft, ArrowRight, Video, PanelLeftOpen, Settings, Send, AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function StudyRoom() {
@@ -43,6 +48,13 @@ export default function StudyRoom() {
   // Chat panel state
   const [chatMessage, setChatMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+
+  // AI provider / model selection
+  const { providers, fetchProviders } = useFetchProviders();
+  const { settings, fetchSettings } = useFetchUserSettings();
+  const { updateSettings } = useUpdateUserSettings();
+  const [providerKey, setProviderKey] = useState('');
+  const [modelKey, setModelKey] = useState('');
   const [messages, setMessages] = useState([
     { 
       role: 'assistant', 
@@ -150,6 +162,29 @@ export default function StudyRoom() {
       isMounted = false;
     };
   }, [courseId, lessonId]);
+
+  // Fetch AI providers and user settings on mount
+  useEffect(() => {
+    fetchProviders();
+    fetchSettings(getCurrentUserId());
+  }, []);
+
+  useEffect(() => {
+    if (settings) {
+      setProviderKey(settings.providerKey || '');
+      setModelKey(settings.modelKey || '');
+    }
+  }, [settings]);
+
+  useEffect(() => {
+    if (providers.length > 0 && !settings) {
+      const first = providers[0];
+      if (first) {
+        setProviderKey(first.key);
+        setModelKey((first.models || [])[0]?.key || '');
+      }
+    }
+  }, [providers, settings]);
 
   // Handle smart prompt click ("Didn't understand this point")
   function handleSmartPrompt() {
@@ -732,57 +767,111 @@ export default function StudyRoom() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Bar Form */}
-            <form 
-              onSubmit={sendMessage}
-              style={{ 
-                padding: '14px', 
-                borderTop: '1px solid var(--glass-border)', 
-                display: 'flex', 
-                gap: '8px',
-                backgroundColor: 'var(--glass-bg)'
+            {/* Unified Input Card — Model Selector + Message Input */}
+            <div
+              dir="rtl"
+              style={{
+                borderTop: '1px solid var(--glass-border)',
+                backgroundColor: 'var(--glass-bg-enhanced)',
+                backdropFilter: 'blur(var(--glass-blur-enhanced))',
               }}
             >
-              <input 
-                ref={chatInputRef}
-                value={chatMessage} 
-                onChange={(event) => setChatMessage(event.target.value)} 
-                placeholder={isSending ? "جاري صياغة الرد..." : "اسأل مساعد الذكاء الاصطناعي..."}
-                disabled={isSending}
-                style={{
-                  flex: 1,
-                  minHeight: '38px',
-                  padding: '0 12px',
-                  fontSize: '0.88rem',
-                  border: '1px solid var(--glass-border)',
-                  borderRadius: 'var(--radius-md)',
-                  outline: 'none',
-                  backgroundColor: 'var(--glass-input-bg)',
-                  color: 'var(--text-main)',
-                  transition: 'all var(--transition-fast)'
-                }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
-                onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
-              />
-              <button 
-                type="submit"
-                disabled={isSending || !chatMessage.trim()}
-                style={{
-                  minWidth: '70px',
-                  backgroundColor: 'var(--primary)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: 'var(--radius-md)',
-                  fontWeight: '800',
-                  fontSize: '0.85rem',
-                  cursor: (isSending || !chatMessage.trim()) ? 'not-allowed' : 'pointer',
-                  opacity: (isSending || !chatMessage.trim()) ? 0.6 : 1,
-                  transition: 'all var(--transition-fast)'
-                }}
+              {/* Top bar: model selector */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',
+                padding: '8px 14px', borderBottom: '1px solid var(--glass-border)',
+                fontSize: '0.78rem',
+              }}>
+                <span style={{ color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  نموذج الذكاء الاصطناعي:
+                </span>
+                <select
+                  value={providerKey}
+                  onChange={(e) => {
+                    setProviderKey(e.target.value);
+                    const p = providers.find((pr) => pr.key === e.target.value);
+                    const firstModel = (p?.models || [])[0]?.key || '';
+                    setModelKey(firstModel);
+                    updateSettings(getCurrentUserId(), {
+                      providerKey: e.target.value,
+                      modelKey: firstModel,
+                    }).catch(() => {});
+                  }}
+                  style={{
+                    fontSize: '0.78rem', padding: '2px 8px', borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border)', background: '#fff',
+                    fontFamily: 'var(--font-sans)', cursor: 'pointer', minWidth: '90px',
+                  }}
+                >
+                  {providers.map((p) => (
+                    <option key={p.key} value={p.key}>{p.key}</option>
+                  ))}
+                </select>
+                <select
+                  value={modelKey}
+                  onChange={(e) => {
+                    setModelKey(e.target.value);
+                    updateSettings(getCurrentUserId(), { providerKey, modelKey: e.target.value }).catch(() => {});
+                  }}
+                  disabled={!providerKey}
+                  style={{
+                    fontSize: '0.78rem', padding: '2px 8px', borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border)',
+                    background: !providerKey ? '#f1f5f9' : '#fff',
+                    fontFamily: 'var(--font-sans)', cursor: 'pointer', minWidth: '130px',
+                  }}
+                >
+                  {providers.find((p) => p.key === providerKey)?.models?.map((m) => (
+                    <option key={m.key} value={m.key}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Input area: textarea + send button */}
+              <form
+                onSubmit={sendMessage}
+                style={{ display: 'flex', gap: '8px', padding: '10px 14px 14px' }}
               >
-                <Send size={14} /> إرسال
-              </button>
-            </form>
+                <textarea
+                  ref={chatInputRef}
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  onInput={(e) => {
+                    e.target.style.height = 'auto';
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                  }}
+                  placeholder={isSending ? 'جاري صياغة الرد...' : 'اسأل مساعد الذكاء الاصطناعي...'}
+                  disabled={isSending}
+                  rows={1}
+                  style={{
+                    flex: 1, resize: 'none', overflowY: 'auto',
+                    minHeight: '40px', maxHeight: '120px',
+                    padding: '10px 12px', fontSize: '0.88rem',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    outline: 'none', fontFamily: 'var(--font-sans)',
+                    backgroundColor: '#fff', color: 'var(--text-main)',
+                    lineHeight: '1.5',
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={isSending || !chatMessage.trim()}
+                  style={{
+                    alignSelf: 'flex-end',
+                    minWidth: '44px', height: '40px',
+                    backgroundColor: chatMessage.trim() && !isSending ? 'var(--primary)' : 'var(--border)',
+                    color: chatMessage.trim() && !isSending ? '#fff' : 'var(--text-muted)',
+                    border: 'none', borderRadius: 'var(--radius-md)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: (isSending || !chatMessage.trim()) ? 'not-allowed' : 'pointer',
+                    transition: 'all var(--transition-fast)',
+                  }}
+                >
+                  <Send size={16} />
+                </button>
+              </form>
+            </div>
           </div>
         </aside>
 
