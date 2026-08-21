@@ -1,89 +1,72 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, FileQuestion, Play } from 'lucide-react';
-import PageFrame from './../../components/ui/PageFrame';
-import Skeleton from './../../components/ui/Skeleton';
-import api from './../../services/api';
-
-const cardStyle = {
-  background: 'var(--glass-bg)', backdropFilter: 'blur(var(--glass-blur))',
-  border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-lg)',
-  padding: '20px', boxShadow: 'var(--glass-shadow)',
-};
+import { useParams, Link } from 'react-router-dom';
+import { FileQuestion, Play, Unplug } from 'lucide-react';
+import PageShell from '@/components/ui/page-shell';
+import PageHeader from '@/components/ui/page-header';
+import { Card } from '@/components/ui/card';
+import BackLink from '@/components/ui/back-link';
+import EmptyState from '@/components/ui/empty-state';
+import api from '../../services/api';
 
 export default function StudentQuizList() {
   const { courseId, lessonId } = useParams();
-  const navigate = useNavigate();
   const [quizzes, setQuizzes] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState('loading'); // loading | ready | error
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get(`/quizzes?lessonId=${lessonId}`);
-        setQuizzes(res.data);
-      } catch (e) {
-        console.error('Failed to fetch quizzes', e);
-      } finally {
-        setLoading(false);
-      }
+    let isMounted = true;
+    api.get(`/quizzes?lessonId=${lessonId}`)
+      .then((res) => {
+        if (isMounted) {
+          setQuizzes(res.data);
+          setStatus('ready');
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch quizzes', err);
+        if (isMounted) setStatus('error');
+      });
+    return () => {
+      isMounted = false;
     };
-    fetch();
   }, [lessonId]);
 
   return (
-    <PageFrame eyebrow="\u0627\u0644\u0643\u0648\u064a\u0632\u0627\u062a" title="\u0627\u0644\u0643\u0648\u064a\u0632\u0627\u062a \u0627\u0644\u0645\u062a\u0627\u062d\u0629">
-      <div style={{ marginBottom: '16px' }}>
-        <button onClick={() => navigate(-1)} style={{
-          display: 'flex', alignItems: 'center', gap: '4px', padding: '8px 14px',
-          borderRadius: 'var(--radius-md)', border: '1px solid var(--border)',
-          cursor: 'pointer', background: 'transparent', color: 'var(--text-main)',
-          fontSize: '0.8rem', fontWeight: 600,
-        }}>
-          <ArrowRight size={14} /> \u0631\u062c\u0648\u0639
-        </button>
-      </div>
+    <PageShell>
+      <PageHeader
+        eyebrow="الكويزات"
+        title="الكويزات المتاحة"
+        actions={<BackLink to={`/study/${courseId}/lesson/${lessonId}`}>رجوع</BackLink>}
+      />
 
-      {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <Skeleton height="80px" count={3} />
+      {status === 'loading' ? (
+        <div className="flex flex-col gap-3">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="h-20 animate-pulse rounded-lg bg-surface-raised" />
+          ))}
         </div>
+      ) : status === 'error' ? (
+        <EmptyState icon={Unplug} title="تعذر تحميل الكويزات" description="حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة مرة أخرى." />
       ) : quizzes.length === 0 ? (
-        <div style={{ ...cardStyle, textAlign: 'center', padding: '60px 20px' }}>
-          <FileQuestion size={48} color="var(--text-muted)" style={{ marginBottom: '12px' }} />
-          <h3 style={{ margin: '0 0 8px' }}>\u0644\u0627 \u062a\u0648\u062c\u062f \u0643\u0648\u064a\u0632\u0627\u062a \u0645\u062a\u0627\u062d\u0629</h3>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>\u0644\u0645 \u064a\u062a\u0645 \u0646\u0634\u0631 \u0623\u064a \u0643\u0648\u064a\u0632 \u0644\u0647\u0630\u0627 \u0627\u0644\u062f\u0631\u0633 \u0628\u0639\u062f</p>
-        </div>
+        <EmptyState icon={FileQuestion} title="لا توجد كويزات متاحة" description="لم يتم نشر أي كويز لهذا الدرس بعد." />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div className="flex flex-col gap-3">
           {quizzes.map((q) => (
-            <Link
-              key={q.id}
-              to={`/study/${courseId}/lesson/${lessonId}/quiz/${q.id}`}
-              style={{ textDecoration: 'none', color: 'inherit' }}
-            >
-              <div style={{ ...cardStyle, cursor: 'pointer' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h3 style={{ margin: '0 0 4px', fontSize: '1.05rem' }}>{q.title}</h3>
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                      {(q.questions || []).length} \u0623\u0633\u0626\u0644\u0629
-                    </p>
-                  </div>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px',
-                    borderRadius: 'var(--radius-md)', background: 'var(--primary)',
-                    color: '#fff', fontSize: '0.85rem', fontWeight: 600,
-                  }}>
-                    <Play size={14} /> \u0628\u062f\u0621
-                  </div>
+            <Link key={q.id} to={`/study/${courseId}/lesson/${lessonId}/quiz/${q.id}`}>
+              <Card className="flex items-center justify-between gap-4 p-5 transition-all duration-200 ease-in-out hover:border-border-hover hover:shadow-soft-lg">
+                <div>
+                  <h3 className="font-display text-base font-semibold text-foreground">{q.title}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{(q.questions || []).length} أسئلة</p>
                 </div>
-              </div>
+                <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+                  <Play className="size-3.5" />
+                  ابدأ
+                </span>
+              </Card>
             </Link>
           ))}
         </div>
       )}
-    </PageFrame>
+    </PageShell>
   );
 }

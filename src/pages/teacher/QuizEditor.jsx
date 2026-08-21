@@ -1,36 +1,22 @@
-﻿import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowRight, Plus, Send, Trash2, CheckCircle, XCircle, AlertTriangle, Eye, Pencil
-} from 'lucide-react';
-import PageFrame from './../../components/ui/PageFrame';
-import Skeleton from './../../components/ui/Skeleton';
-import { normalizeQuiz } from './../../utils/constants';
-import {
-  useFetchQuiz, usePublishQuiz,
-  useAddQuestion, useUpdateQuestion, useDeleteQuestion,
-} from './../../hooks/useQuiz';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { Plus, Trash2, CheckCircle, XCircle, AlertTriangle, Pencil, Unplug } from 'lucide-react';
+import PageShell from '@/components/ui/page-shell';
+import PageHeader from '@/components/ui/page-header';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import BackLink from '@/components/ui/back-link';
+import EmptyState from '@/components/ui/empty-state';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
+import { cn } from '@/lib/utils';
+import { normalizeQuiz } from '../../utils/constants';
+import { useFetchQuiz, usePublishQuiz, useAddQuestion, useUpdateQuestion, useDeleteQuestion } from '../../hooks/useQuiz';
 import QuestionModal from './components/QuestionModal';
-
-const cardGlass = {
-  background: 'var(--glass-bg-enhanced)',
-  backdropFilter: 'blur(var(--glass-blur-enhanced))',
-  border: '1px solid var(--glass-border-enhanced)',
-  borderRadius: 'var(--radius-lg)',
-  boxShadow: 'var(--glass-shadow-enhanced)',
-};
-
-const btnBase = {
-  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-  padding: '8px 16px', borderRadius: 'var(--radius-md)',
-  fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
-  border: 'none', fontFamily: 'var(--font-sans)',
-  transition: 'all var(--transition-fast)',
-};
 
 export default function QuizEditor() {
   const { quizId } = useParams();
-  const navigate = useNavigate();
   const { quiz, loading, fetchQuiz, setQuiz } = useFetchQuiz();
   const { publishQuiz } = usePublishQuiz();
   const { addQuestion } = useAddQuestion();
@@ -38,32 +24,31 @@ export default function QuizEditor() {
   const { deleteQuestion } = useDeleteQuestion();
   const [questionModal, setQuestionModal] = useState(null);
   const [publishing, setPublishing] = useState(false);
-  const [confirmPublish, setConfirmPublish] = useState(false);
+  const [confirmPublishOpen, setConfirmPublishOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [actionError, setActionError] = useState(null);
 
-  useEffect(() => { fetchQuiz(quizId); }, [quizId]);
+  useEffect(() => {
+    fetchQuiz(quizId);
+  }, [quizId]);
 
   const q = quiz ? normalizeQuiz(quiz) : null;
   const isDraft = q?.status === 'DRAFT';
 
-  const handlePublish = async () => {
-    if (!confirmPublish) {
-      setConfirmPublish(true);
-      return;
-    }
-    if (!q || q.questions.length === 0) return;
+  async function handlePublish() {
+    setActionError(null);
     setPublishing(true);
     try {
       const updated = await publishQuiz(quizId);
       setQuiz(updated);
-      setConfirmPublish(false);
     } catch (e) {
-      alert(e.message || 'فشل النشر');
+      setActionError(e.message || 'فشل نشر الكويز');
     } finally {
       setPublishing(false);
     }
-  };
+  }
 
-  const handleAddQuestion = async (form) => {
+  async function handleAddQuestion(form) {
     const updated = await addQuestion(quizId, {
       questionText: form.questionText,
       difficultyWeight: form.difficultyWeight,
@@ -71,9 +56,9 @@ export default function QuizEditor() {
       choices: form.choices.map((c) => ({ choiceText: c.choiceText, isCorrect: c.isCorrect })),
     });
     setQuiz(updated);
-  };
+  }
 
-  const handleUpdateQuestion = async (form) => {
+  async function handleUpdateQuestion(form) {
     const updated = await updateQuestion(quizId, questionModal.id, {
       questionText: form.questionText,
       difficultyWeight: form.difficultyWeight,
@@ -81,96 +66,88 @@ export default function QuizEditor() {
       choices: form.choices.map((c) => ({ choiceText: c.choiceText, isCorrect: c.isCorrect })),
     });
     setQuiz(updated);
-  };
+  }
 
-  const handleDelete = async (questionId) => {
-    if (!window.confirm('هل أنت متأكد من حذف هذا السؤال؟')) return;
+  async function handleConfirmDeleteQuestion() {
     try {
-      await deleteQuestion(quizId, questionId);
-      fetchQuiz(quizId);
+      await deleteQuestion(quizId, deleteTarget.id);
+      await fetchQuiz(quizId);
+      setActionError(null);
     } catch (e) {
-      alert(e.message || 'فشل الحذف');
+      setActionError(e.message || 'فشل حذف السؤال');
     }
-  };
+  }
 
-  const backUrl = new URLSearchParams(window.location.search);
-  const backPath = backUrl.get('courseId')
-    ? `/teacher/quiz-manager/${backUrl.get('courseId')}/${backUrl.get('lessonId')}`
+  const backParams = new URLSearchParams(window.location.search);
+  const backPath = backParams.get('courseId')
+    ? `/teacher/quiz-manager/${backParams.get('courseId')}/${backParams.get('lessonId')}`
     : '/teacher/manage-lessons';
 
   if (loading) {
     return (
-      <PageFrame title="...جاري التحميل">
-        <Skeleton height="120px" count={3} />
-      </PageFrame>
+      <PageShell>
+        <PageHeader title="جاري التحميل..." />
+        <div className="flex flex-col gap-4">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="h-32 animate-pulse rounded-lg bg-surface-raised" />
+          ))}
+        </div>
+      </PageShell>
     );
   }
 
   if (!q) {
     return (
-      <PageFrame title="الكويز غير موجود">
-        <div style={{ ...cardGlass, textAlign: 'center', padding: '60px 20px' }}>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>لم يتم العثور على هذا الكويز</p>
-        </div>
-      </PageFrame>
+      <PageShell>
+        <PageHeader title="الكويز غير موجود" />
+        <EmptyState icon={Unplug} title="لم يتم العثور على هذا الكويز" description="ربما تم حذفه أو أن الرابط غير صحيح." />
+      </PageShell>
     );
   }
 
   return (
-    <PageFrame
-      eyebrow="مراجعة الكويز"
-      title={q.title}
-      actions={
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button onClick={() => navigate(backPath)} style={{ ...btnBase, background: 'transparent', color: 'var(--text-main)', border: '1px solid var(--border)' }}>
-            <ArrowRight size={14} /> عودة
-          </button>
-          {isDraft && (
-            <>
-              <button onClick={() => setQuestionModal('new')} style={{ ...btnBase, background: 'transparent', color: 'var(--text-main)', border: '1px solid var(--border)' }}>
-                <Plus size={14} /> إضافة سؤال
-              </button>
-              <button
-                onClick={handlePublish}
-                disabled={publishing || q.questions.length === 0}
-                style={{
-                  ...btnBase,
-                  background: confirmPublish ? 'var(--error)' : 'var(--success)',
-                  color: '#fff',
-                  opacity: (publishing || q.questions.length === 0) ? 0.6 : 1,
-                  cursor: (publishing || q.questions.length === 0) ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {publishing ? '...نشر' : confirmPublish ? 'تأكيد النشر' : 'نشر الكويز'}
-              </button>
-            </>
-          )}
-        </div>
-      }
-    >
-      {/* Quiz status bar */}
-      <div style={{ ...cardGlass, padding: '16px 20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: '6px',
-          fontSize: '0.78rem', fontWeight: 700, padding: '4px 14px',
-          borderRadius: 'var(--radius-full)',
-          background: isDraft ? 'var(--warning-soft)' : 'var(--quiz-correct-bg)',
-          color: isDraft ? '#92400e' : 'var(--quiz-correct-text)',
-          border: '1px solid',
-          borderColor: isDraft ? 'var(--warning-border)' : 'var(--quiz-correct-border)',
-        }}>
-          {isDraft ? <AlertTriangle size={14} /> : <CheckCircle size={14} />}
+    <PageShell>
+      <PageHeader
+        eyebrow="مراجعة الكويز"
+        title={q.title}
+        actions={
+          <div className="flex items-center gap-2">
+            <BackLink to={backPath}>عودة</BackLink>
+            {isDraft && (
+              <>
+                <Button variant="outline" onClick={() => setQuestionModal('new')}>
+                  <Plus className="size-4" />
+                  إضافة سؤال
+                </Button>
+                <Button
+                  onClick={() => setConfirmPublishOpen(true)}
+                  disabled={publishing || q.questions.length === 0}
+                  className="bg-success hover:bg-success/90"
+                >
+                  نشر الكويز
+                </Button>
+              </>
+            )}
+          </div>
+        }
+      />
+
+      <Card className="mb-6 flex flex-wrap items-center gap-4 p-5">
+        <Badge variant={isDraft ? 'warning' : 'success'} className="gap-1.5">
+          {isDraft ? <AlertTriangle className="size-3.5" /> : <CheckCircle className="size-3.5" />}
           {isDraft ? 'مسودة' : 'منشور'}
-        </span>
-        <span style={{ fontSize: '0.85rem', color: 'var(--quiz-text-secondary)' }}>
-          عدد الأسئلة: {q.questions.length}
-        </span>
+        </Badge>
+        <span className="text-sm text-muted-foreground">عدد الأسئلة: {q.questions.length}</span>
         {isDraft && q.questions.length === 0 && (
-          <span style={{ fontSize: '0.82rem', color: 'var(--error)', fontWeight: 600 }}>
-            أضف سؤالاً واحداً على الأقل قبل النشر
-          </span>
+          <span className="text-sm font-medium text-error">أضف سؤالاً واحداً على الأقل قبل النشر</span>
         )}
-      </div>
+      </Card>
+
+      {actionError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription>{actionError}</AlertDescription>
+        </Alert>
+      )}
 
       {questionModal && (
         <QuestionModal
@@ -181,87 +158,91 @@ export default function QuizEditor() {
       )}
 
       {q.questions.length === 0 ? (
-        <div style={{ ...cardGlass, textAlign: 'center', padding: '40px 20px' }}>
-          <p style={{ margin: 0, color: 'var(--quiz-text-secondary)' }}>
-            لا توجد أسئلة في هذا الكويز. استخدم "إضافة سؤال" لإضافة الأسئلة.
-          </p>
-        </div>
+        <EmptyState icon={AlertTriangle} title="لا توجد أسئلة في هذا الكويز" description={'استخدم "إضافة سؤال" لإضافة الأسئلة.'} />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="flex flex-col gap-4">
           {q.questions.map((question, idx) => (
-            <div key={question.id} style={{ ...cardGlass, padding: '20px' }}>
-              {/* Question header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{
-                    width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
-                    background: 'var(--primary)', color: '#fff', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.85rem', fontWeight: 700,
-                  }}>{idx + 1}</span>
-                  <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>{question.questionText}</h3>
+            <Card key={question.id} className="p-5">
+              <div className="mb-3 flex items-start justify-between gap-4">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                    {idx + 1}
+                  </span>
+                  <h3 className="text-sm font-semibold text-foreground">{question.questionText}</h3>
                 </div>
-                <span style={{
-                  fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'var(--surface-raised)',
-                  color: 'var(--quiz-text-secondary)',
-                  whiteSpace: 'nowrap',
-                }}>
+                <span className="shrink-0 whitespace-nowrap rounded-sm bg-surface-raised px-2.5 py-1 text-xs font-bold text-muted-foreground">
                   {question.difficultyWeight} نقطة
                 </span>
               </div>
 
-              {/* Choices grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px', marginBottom: '12px' }}>
+              <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {question.choices.map((choice) => (
-                  <div key={choice.id} style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    padding: '10px 12px', borderRadius: 'var(--radius-md)',
-                    border: '1px solid',
-                    borderColor: choice.isCorrect ? 'var(--quiz-correct-border)' : 'var(--border)',
-                    background: choice.isCorrect ? 'var(--quiz-correct-bg)' : 'transparent',
-                  }}>
-                    {choice.isCorrect
-                      ? <CheckCircle size={16} color="var(--quiz-correct-text)" />
-                      : <XCircle size={16} color="var(--text-muted)" />
-                    }
-                    <span style={{ fontSize: '0.88rem', color: choice.isCorrect ? 'var(--quiz-correct-text)' : 'var(--text-main)' }}>
+                  <div
+                    key={choice.id}
+                    className={cn(
+                      'flex items-center gap-2 rounded-md border px-3 py-2.5',
+                      choice.isCorrect ? 'border-success-border bg-success-soft' : 'border-border'
+                    )}
+                  >
+                    {choice.isCorrect ? (
+                      <CheckCircle className="size-4 shrink-0 text-success" />
+                    ) : (
+                      <XCircle className="size-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <span className={cn('text-sm', choice.isCorrect ? 'text-success' : 'text-foreground')}>
                       {choice.choiceText}
                     </span>
                   </div>
                 ))}
               </div>
 
-              {/* Explanation */}
               {question.explanation && (
-                <div style={{
-                  padding: '10px 14px', borderRadius: 'var(--radius-md)',
-                  background: 'var(--primary-soft)', fontSize: '0.85rem',
-                  border: '1px solid var(--primary-border)',
-                  color: 'var(--quiz-highlight)',
-                  marginBottom: '12px',
-                }}>
-                  <span style={{ fontWeight: 700 }}>تفسير: </span>
+                <div className="mb-3 rounded-md border border-primary-border bg-primary-soft px-3.5 py-2.5 text-sm text-primary">
+                  <span className="font-semibold">تفسير: </span>
                   {question.explanation}
                 </div>
               )}
 
-              {/* Actions */}
               {isDraft && (
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-start' }}>
-                  <button onClick={() => setQuestionModal(question)} style={{ ...btnBase, background: 'transparent', color: 'var(--text-main)', border: '1px solid var(--border)' }}>
-                    <Pencil size={14} /> تعديل
-                  </button>
-                  <button onClick={() => handleDelete(question.id)} style={{ ...btnBase, background: 'transparent', color: 'var(--error)', border: '1px solid var(--quiz-incorrect-border)' }}>
-                    <Trash2 size={14} /> حذف
-                  </button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setQuestionModal(question)}>
+                    <Pencil className="size-3.5" />
+                    تعديل
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-error-border text-error hover:bg-error-soft"
+                    onClick={() => setDeleteTarget({ id: question.id })}
+                  >
+                    <Trash2 className="size-3.5" />
+                    حذف
+                  </Button>
                 </div>
               )}
-            </div>
+            </Card>
           ))}
         </div>
       )}
-    </PageFrame>
+
+      <ConfirmDialog
+        open={confirmPublishOpen}
+        onOpenChange={setConfirmPublishOpen}
+        title="نشر الكويز"
+        description="بعد النشر، لن تتمكن من تعديل أو حذف أسئلة هذا الكويز. هل تريد المتابعة؟"
+        confirmLabel="نشر"
+        onConfirm={handlePublish}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="حذف السؤال"
+        description="هل أنت متأكد من حذف هذا السؤال؟"
+        confirmLabel="حذف"
+        destructive
+        onConfirm={handleConfirmDeleteQuestion}
+      />
+    </PageShell>
   );
 }
