@@ -14,7 +14,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import api, { getCurrentUserId, getStoredUser } from '../../services/api';
+import api, { API_BASE_URL, getCurrentUserId, getStoredUser } from '../../services/api';
 import { normalizeCourse, normalizeLesson, resolveMediaUrl } from '../../utils/constants';
 import {
   useFetchProviders,
@@ -223,10 +223,8 @@ export default function StudyRoom() {
     setCapturedTimestamp(0); // Reset for next interactions
 
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
-      
       // استدعاء البث اللحظي باستخدام fetch العادي لدعم دفق البيانات (Streaming)
-      const response = await fetch(`${baseUrl}/ai/messages/stream`, {
+      const response = await fetch(`${API_BASE_URL}/ai/messages/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

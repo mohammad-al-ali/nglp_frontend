@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '../services/api';
+
 export const categories = [
   { id: 1, name: 'Programming', parentId: null },
   { id: 2, name: 'Design', parentId: null },
@@ -242,12 +244,11 @@ export function formatDuration(totalSeconds) {
 export function resolveMediaUrl(url) {
   if (!url) return '';
   if (/^https?:\/\//i.test(url)) return url;
-  
-  // Use either specified URL or standard base prefix
-  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-  const cleanBase = envUrl.replace('/api/v1', '');
+
+  // Media (images/videos) is served from the plain origin, not under /api/v1
+  const cleanBase = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
   const relativePath = url.startsWith('/') ? url : `/${url}`;
-  
+
   return `${cleanBase}${relativePath}`;
 }
 

@@ -1,9 +1,12 @@
 import axios from 'axios';
 
+// عنوان الـ API الأساسي — مصدر واحد، بدل ثلاث نسخ متفرقة بأشكال مختلفة
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+
 // 1. إعداد عميل Axios للاتصال بخادم Spring Boot
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
-  
+  baseURL: API_BASE_URL,
+
   // 🌟 مهم جداً: هذا السطر يخبر المتصفح بإرسال ملفات تعريف الارتباط (Cookies/JSESSIONID) 
   // مع كل طلب. وهو ضروري جداً إذا كان Spring Security لديك يعتمد على الجلسات حالياً.
   withCredentials: true, 

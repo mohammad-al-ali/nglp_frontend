@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { getStoredUser } from '../services/api';
+import { isAdmin, isTeacher, isStudent } from '../lib/roles';
 
 export const ROLE_ADMIN = 1;
 export const ROLE_STUDENT = 2;
@@ -15,17 +16,11 @@ export default function RoleRoute({ allowedRoles, children }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Robust check matching Sidebar.jsx
-  const roleStr = String(user?.role?.name || user?.role || '').toUpperCase();
-  const isTeacher = roleStr.includes('TEACHER');
-  const isStudent = roleStr.includes('STUDENT');
-  const isAdmin = roleStr.includes('ADMIN');
-
   // Map to the allowed IDs
   let userRoleId = null;
-  if (isAdmin) userRoleId = ROLE_ADMIN;
-  else if (isTeacher) userRoleId = ROLE_TEACHER;
-  else if (isStudent) userRoleId = ROLE_STUDENT;
+  if (isAdmin(user)) userRoleId = ROLE_ADMIN;
+  else if (isTeacher(user)) userRoleId = ROLE_TEACHER;
+  else if (isStudent(user)) userRoleId = ROLE_STUDENT;
 
   // Fallback to direct id checks if not matched by string
   if (userRoleId === null) {
