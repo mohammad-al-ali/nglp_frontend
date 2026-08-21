@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { ImagePlus, X } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 /**
  * صورة واحدة قابلة للسحب والإفلات مع معاينة فورية.
@@ -46,12 +49,8 @@ export default function ImagePicker({ label, hint, onChange, existingUrl }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-      {label && (
-        <label style={{ color: 'var(--text-main)', fontSize: '0.875rem', fontWeight: '600', fontFamily: 'var(--font-sans)' }}>
-          {label}
-        </label>
-      )}
+    <div className="flex w-full flex-col gap-1.5">
+      {label && <Label>{label}</Label>}
 
       <div
         onClick={() => inputRef.current?.click()}
@@ -59,89 +58,36 @@ export default function ImagePicker({ label, hint, onChange, existingUrl }) {
         onDragOver={handleDrag}
         onDragLeave={handleDrag}
         onDrop={handleDrop}
-        style={{
-          border: `2px dashed ${dragActive ? 'var(--primary)' : 'var(--border)'}`,
-          borderRadius: 'var(--radius-lg)',
-          padding: previewSrc ? '0' : '28px 20px',
-          textAlign: 'center',
-          backgroundColor: dragActive ? 'var(--primary-soft)' : 'var(--bg)',
-          transition: 'all var(--transition-fast)',
-          cursor: 'pointer',
-          position: 'relative',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          minHeight: previewSrc ? '160px' : 'auto',
-        }}
+        className={cn(
+          'relative flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border-2 border-dashed transition-all duration-200 ease-in-out',
+          previewSrc ? 'min-h-40 p-0' : 'min-h-auto p-7',
+          dragActive ? 'border-primary bg-primary-soft' : 'border-border bg-background'
+        )}
       >
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          onChange={(e) => pickFile(e.target.files?.[0])}
-          style={{ display: 'none' }}
-        />
+        <input ref={inputRef} type="file" accept="image/*" onChange={(e) => pickFile(e.target.files?.[0])} className="hidden" />
 
         {previewSrc ? (
           <>
-            <img
-              src={previewSrc}
-              alt=""
-              style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }}
-            />
+            <img src={previewSrc} alt="" className="block h-40 w-full object-cover" />
             <button
               type="button"
               onClick={clearFile}
-              style={{
-                position: 'absolute',
-                top: '8px',
-                insetInlineEnd: '8px',
-                minHeight: '28px',
-                padding: '0 10px',
-                fontSize: '0.75rem',
-                fontWeight: '700',
-                borderRadius: 'var(--radius-full)',
-                border: '1px solid var(--border)',
-                backgroundColor: 'var(--surface)',
-                color: 'var(--error)',
-                cursor: 'pointer',
-              }}
+              className="absolute end-2 top-2 flex h-7 items-center gap-1 rounded-full border border-border bg-surface px-2.5 text-xs font-bold text-error"
             >
-              إزالة
+              <X className="size-3.5" /> إزالة
             </button>
           </>
         ) : (
           <>
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                backgroundColor: 'var(--surface)',
-                border: '1px solid var(--border)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: 'var(--shadow-sm)',
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" style={{ width: '18px', height: '18px', color: 'var(--text-muted)' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18-3.75h16.5a1.5 1.5 0 0 1 1.5 1.5v10.5a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5V6a1.5 1.5 0 0 1 1.5-1.5Z" />
-              </svg>
+            <div className="flex size-10 items-center justify-center rounded-full border border-border bg-surface shadow-sm">
+              <ImagePlus className="size-[18px] text-muted-foreground" />
             </div>
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-main)', fontWeight: '700' }}>
-              اسحب وأفلت صورة هنا أو انقر للاختيار
-            </span>
+            <span className="text-sm font-bold text-foreground">اسحب وأفلت صورة هنا أو انقر للاختيار</span>
           </>
         )}
       </div>
 
-      {hint && (
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{hint}</span>
-      )}
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
     </div>
   );
 }

@@ -55,13 +55,9 @@
 
   /*
    * Deliberate overrides of Tailwind's built-in radius and shadow scale.
-   * These values are the project design system (see docs/DESIGN_SYSTEM.md)
-   * and must stay identical to the root copies below. Tailwind does not
-   * mirror every theme key to a global custom property, so legacy
-   * inline-style components reading var(radius-lg) etc. use the root
-   * declaration, not this one. This block exists so rounded-lg and
-   * shadow-md utilities resolve to the same numbers, instead of
-   * silently falling back to Tailwind's stock 8px and 6px scale.
+   * These values are the project design system (see docs/DESIGN_SYSTEM.md).
+   * Without this block, rounded-lg/shadow-md utilities would silently
+   * fall back to Tailwind's stock 8px/6px scale instead.
    */
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -76,86 +72,6 @@
 }
 
 :root {
-  /*
-   * Pure aliases onto the @theme tokens above — this block is the only
-   * place a legacy inline-style component (var(--primary) etc.) reads
-   * from. No color value is ever declared twice: change it once, in
-   * @theme, and every consumer (Tailwind utility or inline style) moves
-   * together. Do not add a literal color value below this line.
-   */
-  --bg: var(--color-background);
-  --surface: var(--color-surface);
-  --surface-raised: var(--color-surface-raised);
-  --surface-hover: var(--color-surface-raised);
-
-  --text-main: var(--color-foreground);
-  --text-muted: var(--color-muted-foreground);
-  --text-inverse: var(--color-text-inverse);
-
-  --border: var(--color-border);
-  --border-focus: var(--color-primary);
-  --border-hover: var(--color-border-hover);
-
-  --primary: var(--color-primary);
-  --primary-hover: var(--color-primary-hover);
-  --primary-soft: var(--color-primary-soft);
-  --primary-border: var(--color-primary-border);
-
-  --success: var(--color-success);
-  --success-soft: var(--color-success-soft);
-  --success-border: var(--color-success-border);
-
-  --warning: var(--color-warning);
-  --warning-soft: var(--color-warning-soft);
-  --warning-border: var(--color-warning-border);
-
-  --error: var(--color-error);
-  --error-soft: var(--color-error-soft);
-  --error-border: var(--color-error-border);
-
-  /* Enhanced Glass - quiz pages (higher opacity for readability) */
-  --glass-bg-enhanced: rgba(255, 255, 255, 0.9);
-  --glass-blur-enhanced: 16px;
-  --glass-border-enhanced: #e4e4e7;
-  --glass-shadow-enhanced: 0 4px 20px rgba(24, 24, 27, 0.06);
-
-  /* Quiz-specific tokens */
-  --quiz-text-secondary: #52525b;
-  --quiz-progress-track: #e4e4e7;
-  --quiz-progress-fill: #5457e5;
-  --quiz-correct-bg: #f0fdf4;
-  --quiz-correct-border: #86efac;
-  --quiz-correct-text: #15803d;
-  --quiz-incorrect-bg: #fef2f2;
-  --quiz-incorrect-border: #fca5a5;
-  --quiz-incorrect-text: #b91c1c;
-  --quiz-hero-bg: #ffffff;
-  --quiz-highlight: #4345c4;
-
-  /*
-   * Flattened glass. `.premium-card` (48 call sites) and Sidebar read
-   * these tokens directly, so redefining them here — rather than
-   * touching each of the 15 consuming files — makes the whole app's
-   * remaining glassmorphism render as an opaque flat surface in one
-   * commit. No component code changes; only these six values move.
-   */
-  --glass-bg: var(--color-surface);
-  --glass-blur: 0px;
-  --glass-border: var(--color-border);
-  --glass-shadow: var(--shadow-soft);
-  --glass-shadow-hover: var(--shadow-soft-lg);
-  --glass-input-bg: var(--color-surface);
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04);
-  --shadow-md: 0 2px 8px rgba(24, 24, 27, 0.06);
-  --shadow-lg: 0 8px 24px rgba(24, 24, 27, 0.08);
-  --shadow-premium: 0 8px 24px rgba(24, 24, 27, 0.08);
-
-  /* Radius */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
   --radius-full: 9999px;
 
   /* Transitions */
@@ -164,7 +80,6 @@
   --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Navigation & Layout dimensions */
-  --header-height: 70px;
   --sidebar-width: 280px;
 }
 
@@ -178,8 +93,8 @@
 
   html, body, #root {
     min-height: 100vh;
-    background: var(--bg);
-    color: var(--text-main);
+    background: var(--color-background);
+    color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -209,17 +124,16 @@
     background: #94a3b8;
   }
 
-  /* Premium Typography */
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     font-weight: 700;
-    color: var(--text-main);
+    color: var(--color-foreground);
     letter-spacing: -0.02em;
   }
 
   p {
     line-height: 1.6;
-    color: var(--text-muted);
+    color: var(--color-muted-foreground);
   }
 
   button,
@@ -244,60 +158,6 @@
     cursor: pointer;
   }
 
-  .primary-button,
-  .secondary-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 42px;
-    padding: 0 16px;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    font-weight: 750;
-    transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
-  }
-
-  .primary-button {
-    color: #ffffff;
-    background: var(--primary);
-  }
-
-  .primary-button:hover {
-    background: var(--primary-hover);
-    transform: translateY(-1px);
-  }
-
-  .primary-button:disabled {
-    cursor: not-allowed;
-    opacity: 0.62;
-    transform: none;
-  }
-
-  .secondary-button {
-    color: var(--text-main);
-    background: var(--surface);
-    border-color: var(--border);
-  }
-
-  .secondary-button:hover {
-    color: var(--primary);
-    border-color: var(--primary-border);
-    background: var(--primary-soft);
-  }
-
-  .data-source {
-    display: inline-flex;
-    align-items: center;
-    min-height: 30px;
-    padding: 0 10px;
-    color: #92400e;
-    background: #fffbeb;
-    border: 1px solid #fde68a;
-    border-radius: 999px;
-    font-size: 0.82rem;
-    font-weight: 800;
-  }
-
   /*
    * Global form-control base styling for the many raw <input>/<select>/
    * <textarea> elements that predate the component library. Narrowed to
@@ -311,7 +171,7 @@
     textarea
   ) {
     width: 100%;
-    color: var(--text-main);
+    color: var(--color-foreground);
     background: #ffffff;
     border: 1px solid #d1d5db;
     border-radius: 8px;
@@ -336,56 +196,8 @@
     select,
     textarea
   ):focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-soft);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
   }
-}
-
-/* Animations */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: .5;
-  }
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes shiver {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
-  75% { transform: translateX(2px); }
-}
-
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* Common Interactive Classes */
-.premium-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--glass-shadow);
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
-}
-
-.premium-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--glass-shadow-hover);
-  border-color: var(--border-hover);
 }
 
