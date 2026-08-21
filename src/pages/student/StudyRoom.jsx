@@ -1,77 +1,54 @@
-/**
- * ====================================================================
- * 🎓 اسم الملف: StudyRoom.jsx (مساحة التعلم الذكية للطالب)
- * 🎯 الغاية منه:
- *   يوفر هذا الملف بيئة دراسية متكاملة للطالب تشبه واجهة IDE (VS Code).
- *   يشتمل الملف على:
- *     1. مشغل فيديو مرئي تفاعلي للدرس.
- *     2. تفريغ نصي تلقائي لوقائع الفيديو مستخرج بالذكاء الاصطناعي (Whisper).
- *     3. لوحة محادثة ذكية متكاملة ومزامنة زمنياً مع الفيديو تتيح للطالب الاستفسار
- *        عن أي نقطة في الدرس واستلام رد تدفقي لحظي (Streaming) من المساعد الذكي.
- * ====================================================================
- */
-
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import api, { API_BASE_URL, getCurrentUserId, getStoredUser } from '../../services/api';
-import { normalizeCourse, normalizeLesson, resolveMediaUrl } from '../../utils/constants';
-import {
-  useFetchProviders,
-  useFetchUserSettings,
-  useUpdateUserSettings,
-} from '../../hooks/useQuiz';
-import { Bot, Sparkles, FileText, AlignLeft, BookOpen, Clock, X, ChevronUp, ChevronLeft, ArrowRight, Video, PanelLeftOpen, Settings, Send, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Loader2, ArrowRight, ChevronLeft, PanelLeftOpen, Bot, FileText, AlertTriangle, RefreshCw } from 'lucide-react';
+import api, { API_BASE_URL, getCurrentUserId } from '../../services/api';
+import { normalizeCourse, normalizeLesson } from '../../utils/constants';
+import { useFetchProviders, useFetchUserSettings, useUpdateUserSettings } from '../../hooks/useQuiz';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import AiTutorPanel from './components/AiTutorPanel';
+import LessonVideoPane from './components/LessonVideoPane';
+import LessonNavPanel from './components/LessonNavPanel';
+
+const WELCOME_MESSAGE = {
+  role: 'assistant',
+  text: 'أهلاً بك! أنا مساعدك التعليمي الذكي. كيف يمكنني مساعدتك في فهم هذا الدرس أو شرح الكود البرمجي اليوم؟',
+};
 
 export default function StudyRoom() {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
-  
+
   const messagesEndRef = useRef(null);
   const videoRef = useRef(null);
   const chatInputRef = useRef(null);
 
-  // States managed strictly from API responses
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [activeLesson, setActiveLesson] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // VS Code toggles states
-  const [showTutor, setShowTutor] = useState(false); // Collapsed by default
-  const [showDetails, setShowDetails] = useState(true); // Open by default
-  const [showLessons, setShowLessons] = useState(true); // Open by default
-  
-  const [networkSource, setNetworkSource] = useState('backend'); // backend, offline
 
-  // Chat panel state
+  const [showTutor, setShowTutor] = useState(false);
+  const [showDetails, setShowDetails] = useState(true);
+  const [showLessons, setShowLessons] = useState(true);
+
   const [chatMessage, setChatMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  // AI provider / model selection
   const { providers, fetchProviders } = useFetchProviders();
   const { settings, fetchSettings } = useFetchUserSettings();
   const { updateSettings } = useUpdateUserSettings();
   const [providerKey, setProviderKey] = useState('');
   const [modelKey, setModelKey] = useState('');
-  const [messages, setMessages] = useState([
-    { 
-      role: 'assistant', 
-      text: 'أهلاً بك! أنا مساعدك التعليمي الذكي. كيف يمكنني مساعدتك في فهم هذا الدرس أو شرح الكود البرمجي اليوم؟' 
-    },
-  ]);
-  const [activeConversationId, setActiveConversationId] = useState(null);
+  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
 
-  // Implicitly captured timestamp
   const [capturedTimestamp, setCapturedTimestamp] = useState(0);
 
-  // Scroll to bottom of chat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Fetch course & specific lesson details strictly from the database endpoints
   useEffect(() => {
     let isMounted = true;
 
@@ -79,13 +56,10 @@ export default function StudyRoom() {
       try {
         setLoading(true);
         setError(null);
-        
-        // 1. Fetch active lesson metadata directly
+
         const lessonResponse = await api.get(`/lessons/${lessonId}`);
-        console.log(lessonResponse);
         const activeL = normalizeLesson(lessonResponse.data);
 
-        // 2. Fetch sibling syllabus lessons
         let siblingLessons = [];
         try {
           const siblingResponse = await api.get('/lessons', { params: { courseId } });
@@ -94,7 +68,6 @@ export default function StudyRoom() {
           console.warn('Failed to load sibling lessons list', e);
         }
 
-        // 3. Fetch course details
         let courseDetails = null;
         try {
           const courseResponse = await api.get(`/courses/${courseId}`);
@@ -103,23 +76,18 @@ export default function StudyRoom() {
           console.warn('Failed to load course details', e);
         }
 
-        // 4. تهيئة أو جلب المحادثة وتاريخ الرسائل دفعة واحدة بطلب واحد مبسط (تقليل التحميل على الشبكة)
-        let conversationId = null;
         let fetchedMessages = [];
         try {
           const currentUserId = getCurrentUserId();
           const historyResponse = await api.get('/conversations/history', {
-            params: { userId: Number(currentUserId), lessonId: Number(lessonId) }
+            params: { userId: Number(currentUserId), lessonId: Number(lessonId) },
           });
-          
-          if (historyResponse.data) {
-            conversationId = historyResponse.data.conversationId;
-            if (historyResponse.data.messages && historyResponse.data.messages.length > 0) {
-              fetchedMessages = historyResponse.data.messages.map((msg) => ({
-                role: msg.senderType === 'USER' ? 'student' : 'assistant',
-                text: msg.content
-              }));
-            }
+
+          if (historyResponse.data?.messages?.length > 0) {
+            fetchedMessages = historyResponse.data.messages.map((msg) => ({
+              role: msg.senderType === 'USER' ? 'student' : 'assistant',
+              text: msg.content,
+            }));
           }
         } catch (e) {
           console.warn('Failed to fetch conversation history from backend:', e);
@@ -129,19 +97,7 @@ export default function StudyRoom() {
           setActiveLesson(activeL);
           setLessons(siblingLessons);
           setCourse(courseDetails);
-          setActiveConversationId(conversationId);
-          if (fetchedMessages.length > 0) {
-            setMessages(fetchedMessages);
-          } else {
-            // إعادة ضبط الرسائل للترحيب الافتراضي في حال عدم وجود تاريخ محادثة سابق
-            setMessages([
-              { 
-                role: 'assistant', 
-                text: 'أهلاً بك! أنا مساعدك التعليمي الذكي. كيف يمكنني مساعدتك في فهم هذا الدرس أو شرح الكود البرمجي اليوم؟' 
-              },
-            ]);
-          }
-          setNetworkSource('backend');
+          setMessages(fetchedMessages.length > 0 ? fetchedMessages : [WELCOME_MESSAGE]);
           setLoading(false);
         }
       } catch (err) {
@@ -151,7 +107,6 @@ export default function StudyRoom() {
           setActiveLesson(null);
           setLessons([]);
           setCourse(null);
-          setNetworkSource('offline');
           setLoading(false);
         }
       }
@@ -163,53 +118,47 @@ export default function StudyRoom() {
     };
   }, [courseId, lessonId]);
 
-  // Fetch AI providers and user settings on mount
   useEffect(() => {
     fetchProviders();
     fetchSettings(getCurrentUserId());
   }, []);
 
   useEffect(() => {
-    if (settings) {
-      setProviderKey(settings.providerKey || '');
-      setModelKey(settings.modelKey || '');
-    }
+    Promise.resolve().then(() => {
+      if (settings) {
+        setProviderKey(settings.providerKey || '');
+        setModelKey(settings.modelKey || '');
+      }
+    });
   }, [settings]);
 
   useEffect(() => {
-    if (providers.length > 0 && !settings) {
-      const first = providers[0];
-      if (first) {
-        setProviderKey(first.key);
-        setModelKey((first.models || [])[0]?.key || '');
+    Promise.resolve().then(() => {
+      if (providers.length > 0 && !settings) {
+        const first = providers[0];
+        if (first) {
+          setProviderKey(first.key);
+          setModelKey((first.models || [])[0]?.key || '');
+        }
       }
-    }
+    });
   }, [providers, settings]);
 
-  // Handle smart prompt click ("Didn't understand this point")
   function handleSmartPrompt() {
-    // 1. Expand AI Tutor Panel
     setShowTutor(true);
-    
-    // 2. Set chat input state to "لم أفهم"
     setChatMessage('لم أفهم');
-    
-    // 3. Implicitly capture current video playback time
+
     if (videoRef.current) {
       const time = Math.floor(videoRef.current.currentTime);
       setCapturedTimestamp(time);
-      
-      // إيقاف الفيديو مؤقتاً تلقائياً لتركيز الطالب
       videoRef.current.pause();
     }
-    
-    // 4. Focus the chat input box
+
     setTimeout(() => {
       chatInputRef.current?.focus();
     }, 200);
   }
 
-  // Send message to AI Tutor with Real-Time Response Streaming (SSE)
   async function sendMessage(event) {
     event.preventDefault();
     if (!chatMessage.trim() || isSending || !activeLesson) return;
@@ -220,15 +169,12 @@ export default function StudyRoom() {
     setIsSending(true);
 
     const timestampToSend = capturedTimestamp;
-    setCapturedTimestamp(0); // Reset for next interactions
+    setCapturedTimestamp(0);
 
     try {
-      // استدعاء البث اللحظي باستخدام fetch العادي لدعم دفق البيانات (Streaming)
       const response = await fetch(`${API_BASE_URL}/ai/messages/stream`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: Number(getCurrentUserId()),
           lessonId: Number(activeLesson.id),
@@ -246,7 +192,6 @@ export default function StudyRoom() {
       let done = false;
       let accumulatedText = '';
 
-      // إضافة رسالة مساعد فارغة تبدأ بالتعبئة الحية
       setMessages((current) => [...current, { role: 'assistant', text: '' }]);
 
       while (!done) {
@@ -254,27 +199,23 @@ export default function StudyRoom() {
         done = readerDone;
         if (value) {
           const chunk = decoder.decode(value, { stream: !done });
-          // تقسيم الحزمة المستلمة إلى أسطر وقراءة أسطر SSE المبتدئة بـ "data:"
           const lines = chunk.split('\n');
           for (const line of lines) {
             const trimmedLine = line.trim();
             if (trimmedLine.startsWith('data:')) {
-              // نقص ما بعد البادئة "data:" مع الحفاظ التام على المسافات البادئة واللاحقة للكلمة
               const startIndex = line.indexOf('data:') + 5;
               let cleanChunk = line.substring(startIndex);
-              
+
               if (cleanChunk.trim() === '[DONE]') {
                 break;
               }
               if (cleanChunk) {
-                // إزالة علامات الاقتباس المحيطة بالكلمة فقط إذا كانت مضافة من تسلسل الـ JSON
                 const trimmedChunk = cleanChunk.trim();
                 if (trimmedChunk.startsWith('"') && trimmedChunk.endsWith('"') && trimmedChunk.length > 1) {
                   cleanChunk = cleanChunk.replace(trimmedChunk, trimmedChunk.substring(1, trimmedChunk.length - 1));
                 }
-                // تحويل ترميز الأسطر الجديدة والمحاذاة
                 cleanChunk = cleanChunk.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
-                
+
                 accumulatedText += cleanChunk;
                 setMessages((current) => {
                   const next = [...current];
@@ -292,11 +233,9 @@ export default function StudyRoom() {
       console.warn('AI Chat streaming request failed.', err);
       setMessages((current) => [
         ...current,
-        { 
-          role: 'assistant', 
-          text: `⚠️ **حدث خطأ في الاتصال بمساعد الذكاء الاصطناعي**
-          
-لا يمكن الاتصال بنظام المحادثة اللحظية حالياً. يرجى التحقق من اتصال الخادم وإعادة المحاولة لاحقاً.` 
+        {
+          role: 'assistant',
+          text: 'حدث خطأ في الاتصال بمساعد الذكاء الاصطناعي. لا يمكن الاتصال بنظام المحادثة اللحظية حالياً. يرجى التحقق من اتصال الخادم وإعادة المحاولة لاحقاً.',
         },
       ]);
     } finally {
@@ -306,899 +245,119 @@ export default function StudyRoom() {
 
   if (loading) {
     return (
-      <div 
-        style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          width: '100vw', 
-          height: '100vh', 
-          color: 'var(--text-main)',
-          direction: 'rtl'
-        }}
-      >
-        <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: '3px solid var(--primary-soft)', borderTopColor: 'var(--primary)', animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
-        <strong style={{ fontSize: '1.1rem', fontWeight: '800' }}>جاري تحميل مساحة التعلم الذكية...</strong>
-        <style>{`
-          @keyframes spin { to { transform: rotate(360deg); } }
-        `}</style>
+      <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 text-foreground">
+        <Loader2 className="size-10 animate-spin text-primary" />
+        <strong className="text-lg font-bold">جاري تحميل مساحة التعلم الذكية...</strong>
       </div>
     );
   }
 
   if (error || !activeLesson) {
     return (
-      <div 
-        style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          width: '100vw', 
-          height: '100vh', 
-          color: 'var(--text-main)',
-          padding: '24px',
-          textAlign: 'center',
-          direction: 'rtl',
-          fontFamily: 'var(--font-sans)'
-        }}
-      >
-        <AlertTriangle size={48} style={{ marginBottom: '16px', color: 'var(--warning)' }} />
-        <h2 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '12px' }}>فشل تحميل مساحة الدرس</h2>
-        <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', maxWidth: '480px', marginBottom: '24px', lineHeight: '1.6' }}>
-          {error || 'لم يتم العثور على بيانات هذا الدرس في قاعدة البيانات.'}
-        </p>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button 
-            onClick={() => window.location.reload()}
-            style={{
-              minHeight: '40px',
-              padding: '0 20px',
-              backgroundColor: 'var(--primary)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: '700',
-              cursor: 'pointer'
-            }}
-          >
-            <RefreshCw size={16} /> إعادة المحاولة
-          </button>
-          <Link 
-            to="/dashboard"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '40px',
-              padding: '0 20px',
-              backgroundColor: 'var(--surface-raised)',
-              color: 'var(--text-main)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: '700',
-              textDecoration: 'none'
-            }}
-          >
+      <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 p-6 text-center font-sans text-foreground">
+        <AlertTriangle className="size-12 text-warning" />
+        <h2 className="text-2xl font-bold">فشل تحميل مساحة الدرس</h2>
+        <p className="max-w-md text-sm leading-relaxed text-muted-foreground">{error || 'لم يتم العثور على بيانات هذا الدرس في قاعدة البيانات.'}</p>
+        <div className="flex gap-3">
+          <Button onClick={() => window.location.reload()}>
+            <RefreshCw className="size-4" /> إعادة المحاولة
+          </Button>
+          <Button as={Link} to="/dashboard" variant="outline">
             العودة للوحة المتابعة
-          </Link>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div 
-      style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        width: '100vw', 
-        height: '100vh', 
-        overflow: 'hidden', 
-        color: 'var(--text-main)', 
-        fontFamily: 'var(--font-sans)',
-        direction: 'rtl'
-      }}
-    >
-      {/* Inject custom styles for Markdown parsing and sliding transitions */}
-      <style>{`
-        .markdown-content p {
-          margin: 0 0 10px;
-          line-height: 1.6;
-        }
-        .markdown-content p:last-child {
-          margin-bottom: 0;
-        }
-        .markdown-content ul, .markdown-content ol {
-          margin: 0 0 10px;
-          padding-right: 20px;
-          line-height: 1.5;
-        }
-        .markdown-content li {
-          margin-bottom: 4px;
-        }
-        .markdown-content pre {
-          background-color: var(--surface-raised);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-md);
-          padding: 12px;
-          overflow-x: auto;
-          margin: 10px 0;
-          direction: ltr;
-          text-align: left;
-        }
-        .markdown-content code {
-          font-family: var(--font-mono);
-          font-size: 0.82rem;
-          color: var(--primary);
-          background-color: var(--primary-soft);
-          padding: 2px 5px;
-          border-radius: 4px;
-          font-weight: 600;
-        }
-        .markdown-content pre code {
-          color: var(--text-main);
-          background-color: transparent;
-          padding: 0;
-          border-radius: 0;
-          font-weight: 400;
-        }
-        .lesson-nav-btn {
-          transition: all var(--transition-fast);
-        }
-        .lesson-nav-btn:hover {
-          background-color: var(--primary-soft) !important;
-          border-color: var(--primary-border) !important;
-        }
-      `}</style>
-
-      {/* Top IDE Header navigation Breadcrumbs bar */}
-      <header 
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          height: '52px',
-          padding: '0 20px',
-          backgroundColor: 'var(--glass-bg)',
-          backdropFilter: 'blur(var(--glass-blur))',
-          WebkitBackdropFilter: 'blur(var(--glass-blur))',
-          borderBottom: '1px solid var(--glass-border)',
-          flex: '0 0 auto',
-          zIndex: 10
-        }}
-      >
-        {/* Breadcrumb path */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Link 
-            to="/dashboard" 
-            style={{ 
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '32px',
-              padding: '0 12px',
-              backgroundColor: 'var(--surface-raised)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-              color: 'var(--text-main)',
-              fontSize: '0.8rem',
-              fontWeight: '700',
-              textDecoration: 'none'
-            }}
-          >
-            <ArrowRight size={16} /> لوحة الطلاب
+    <div className="flex h-screen w-screen flex-col overflow-hidden text-foreground">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface px-5">
+        <div className="flex items-center gap-3">
+          <Link to="/dashboard" className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-surface-raised px-3 text-xs font-bold text-foreground">
+            <ArrowRight className="size-4" /> لوحة الطلاب
           </Link>
-          <ChevronLeft size={14} style={{ color: 'var(--text-muted)' }} />
-          <span style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-muted)' }}>
-            {course?.title || 'كورس تعليمي'}
-          </span>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>/</span>
-          <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--primary)' }}>
-            {activeLesson.title}
-          </span>
+          <ChevronLeft className="size-3.5 text-muted-foreground" />
+          <span className="text-sm font-bold text-muted-foreground">{course?.title || 'كورس تعليمي'}</span>
+          <span className="text-sm text-muted-foreground">/</span>
+          <span className="text-sm font-bold text-primary">{activeLesson.title}</span>
         </div>
 
-        {/* Toggle buttons + Server status */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <button
-            onClick={() => setShowLessons(!showLessons)}
-            title="قائمة الدروس"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '32px',
-              height: '32px',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: showLessons ? 'var(--primary-soft)' : 'transparent',
-              color: showLessons ? 'var(--primary)' : 'var(--text-muted)',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => { if (!showLessons) e.currentTarget.style.background = 'var(--surface-raised)'; }}
-            onMouseLeave={(e) => { if (!showLessons) e.currentTarget.style.background = 'transparent'; }}
-          >
-            <PanelLeftOpen size={18} />
-          </button>
-          <button
-            onClick={() => setShowTutor(!showTutor)}
-            title="مساعد الذكاء الاصطناعي"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '32px',
-              height: '32px',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: showTutor ? 'var(--primary-soft)' : 'transparent',
-              color: showTutor ? 'var(--primary)' : 'var(--text-muted)',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => { if (!showTutor) e.currentTarget.style.background = 'var(--surface-raised)'; }}
-            onMouseLeave={(e) => { if (!showTutor) e.currentTarget.style.background = 'transparent'; }}
-          >
-            <Bot size={18} />
-          </button>
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            title="تفاصيل الدرس"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '32px',
-              height: '32px',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: showDetails ? 'var(--primary-soft)' : 'transparent',
-              color: showDetails ? 'var(--primary)' : 'var(--text-muted)',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => { if (!showDetails) e.currentTarget.style.background = 'var(--surface-raised)'; }}
-            onMouseLeave={(e) => { if (!showDetails) e.currentTarget.style.background = 'transparent'; }}
-          >
-            <FileText size={18} />
-          </button>
-          <button
-            title="إعدادات مساحة التعلم"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '32px',
-              height: '32px',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-raised)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            <Settings size={18} />
-          </button>
+        <div className="flex items-center gap-1.5">
+          <HeaderToggleButton active={showLessons} onClick={() => setShowLessons(!showLessons)} title="قائمة الدروس" icon={PanelLeftOpen} />
+          <HeaderToggleButton active={showTutor} onClick={() => setShowTutor(!showTutor)} title="مساعد الذكاء الاصطناعي" icon={Bot} />
+          <HeaderToggleButton active={showDetails} onClick={() => setShowDetails(!showDetails)} title="تفاصيل الدرس" icon={FileText} />
 
-          <span style={{ width: '1px', height: '20px', backgroundColor: 'var(--glass-border)', margin: '0 6px' }} />
+          <span className="mx-1.5 h-5 w-px bg-border" />
 
-          {networkSource === 'backend' ? (
-            <span 
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '0.74rem',
-                fontWeight: '800',
-                color: 'var(--success)',
-                backgroundColor: 'var(--success-soft)',
-                padding: '4px 10px',
-                borderRadius: 'var(--radius-full)',
-                border: '1px solid var(--success-border)'
-              }}
-            >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success)', display: 'inline-block' }} />
-              اتصال ذكي بخادم البيانات
-            </span>
-          ) : (
-            <span 
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '0.74rem',
-                fontWeight: '800',
-                color: 'var(--warning)',
-                backgroundColor: 'var(--warning-soft)',
-                padding: '4px 10px',
-                borderRadius: 'var(--radius-full)',
-                border: '1px solid var(--warning-border)'
-              }}
-            >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--warning)', display: 'inline-block' }} />
-              وضع محلي بدون خادم
-            </span>
-          )}
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-success-border bg-success-soft px-2.5 py-1 text-xs font-bold text-success">
+            <span className="size-1.5 rounded-full bg-success" />
+            اتصال ذكي بخادم البيانات
+          </span>
         </div>
       </header>
 
-      {/* Main Full-Height Workspace (RTL Visual Order: Right to Left) */}
-      <div style={{ display: 'flex', minHeight: '0', flex: '1 1 auto', width: '100vw', overflow: 'hidden' }}>
-        
-        {/* Panel 1: Rightmost Pane - Collapsible AI Tutor Chat (Default: Collapsed/Hidden) */}
-        <aside 
-          style={{
-            width: showTutor ? '380px' : '0px',
-            overflow: 'hidden',
-            transition: 'width 0.3s ease-in-out, border-left 0.3s ease-in-out',
-            backgroundColor: 'var(--glass-bg)',
-            backdropFilter: 'blur(var(--glass-blur))',
-            WebkitBackdropFilter: 'blur(var(--glass-blur))',
-            borderLeft: showTutor ? '1px solid var(--glass-border)' : 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            flexShrink: 0
+      <div className="flex min-h-0 w-screen flex-1 overflow-hidden">
+        <AiTutorPanel
+          show={showTutor}
+          onClose={() => setShowTutor(false)}
+          messages={messages}
+          isSending={isSending}
+          messagesEndRef={messagesEndRef}
+          providers={providers}
+          providerKey={providerKey}
+          modelKey={modelKey}
+          onProviderChange={(e) => {
+            setProviderKey(e.target.value);
+            const p = providers.find((pr) => pr.key === e.target.value);
+            const firstModel = (p?.models || [])[0]?.key || '';
+            setModelKey(firstModel);
+            updateSettings(getCurrentUserId(), { providerKey: e.target.value, modelKey: firstModel }).catch(() => {});
           }}
-        >
-          {/* Slide mask inner wrapper */}
-          <div style={{ width: '380px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {/* Chat header */}
-            <div 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '14px 18px',
-                borderBottom: '1px solid var(--glass-border)',
-                backgroundColor: 'var(--glass-bg)'
-              }}
-            >
-              <span style={{ fontSize: '0.85rem', fontWeight: '900', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Bot size={18} /> مساعد التعلم الذكي (AI Tutor)
-              </span>
-              <button 
-                onClick={() => setShowTutor(false)}
-                title="إغلاق قسم المحادثة"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            
-            {/* Chat Messages Panel */}
-            <div 
-              style={{ 
-                flex: 1, 
-                overflowY: 'auto', 
-                padding: '18px', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '14px' 
-              }}
-            >
-              {messages.map((msg, index) => {
-                const isAssistant = msg.role === 'assistant';
-                return (
-                  <div 
-                    key={index}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: isAssistant ? 'flex-start' : 'flex-end',
-                      width: '100%'
-                    }}
-                  >
-                    <span 
-                      style={{ 
-                        fontSize: '0.72rem', 
-                        fontWeight: '700', 
-                        color: 'var(--text-muted)',
-                        marginBottom: '4px',
-                        padding: '0 4px'
-                      }}
-                    >
-                      {isAssistant ? 'المساعد الذكي' : 'أنت'}
-                    </span>
-                    
-                    <div 
-                      className="markdown-content"
-                      style={{
-                        padding: '12px 14px',
-                        borderRadius: isAssistant ? '0 12px 12px 12px' : '12px 0 12px 12px',
-                        fontSize: '0.88rem',
-                        lineHeight: '1.5',
-                        maxWidth: '85%',
-                        color: 'var(--text-main)',
-                        backgroundColor: isAssistant ? 'var(--surface-raised)' : 'var(--primary-soft)',
-                        border: isAssistant ? '1px solid var(--border)' : '1px solid var(--primary-border)',
-                        boxShadow: 'var(--shadow-sm)',
-                        wordBreak: 'break-word',
-                        textAlign: 'right'
-                      }}
-                    >
-                      {isAssistant ? (
-                        <ReactMarkdown>{msg.text}</ReactMarkdown>
-                      ) : (
-                        msg.text
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {/* Typing indicator */}
-              {isSending && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', padding: '0 4px' }}>
-                    المساعد الذكي
-                  </span>
-                  <div 
-                    style={{
-                      padding: '10px 14px',
-                      borderRadius: '0 12px 12px 12px',
-                      fontSize: '0.82rem',
-                      color: 'var(--text-muted)',
-                      backgroundColor: 'var(--surface-raised)',
-                      border: '1px solid var(--border)',
-                      fontStyle: 'italic',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    <span className="pulse-dots" style={{ display: 'flex', gap: '3px' }}>
-                      <span style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: 'var(--primary)', animation: 'pulse 1s infinite alternate' }} />
-                      <span style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: 'var(--primary)', animation: 'pulse 1s infinite alternate 0.2s' }} />
-                      <span style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: 'var(--primary)', animation: 'pulse 1s infinite alternate 0.4s' }} />
-                    </span>
-                    المساعد يكتب...
-                  </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Unified Input Card — Model Selector + Message Input */}
-            <div
-              dir="rtl"
-              style={{
-                borderTop: '1px solid var(--glass-border)',
-                backgroundColor: 'var(--glass-bg-enhanced)',
-                backdropFilter: 'blur(var(--glass-blur-enhanced))',
-              }}
-            >
-              {/* Top bar: model selector */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',
-                padding: '8px 14px', borderBottom: '1px solid var(--glass-border)',
-                fontSize: '0.78rem',
-              }}>
-                <span style={{ color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  نموذج الذكاء الاصطناعي:
-                </span>
-                <select
-                  value={providerKey}
-                  onChange={(e) => {
-                    setProviderKey(e.target.value);
-                    const p = providers.find((pr) => pr.key === e.target.value);
-                    const firstModel = (p?.models || [])[0]?.key || '';
-                    setModelKey(firstModel);
-                    updateSettings(getCurrentUserId(), {
-                      providerKey: e.target.value,
-                      modelKey: firstModel,
-                    }).catch(() => {});
-                  }}
-                  style={{
-                    fontSize: '0.78rem', padding: '2px 8px', borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--border)', background: '#fff',
-                    fontFamily: 'var(--font-sans)', cursor: 'pointer', minWidth: '90px',
-                  }}
-                >
-                  {providers.map((p) => (
-                    <option key={p.key} value={p.key}>{p.key}</option>
-                  ))}
-                </select>
-                <select
-                  value={modelKey}
-                  onChange={(e) => {
-                    setModelKey(e.target.value);
-                    updateSettings(getCurrentUserId(), { providerKey, modelKey: e.target.value }).catch(() => {});
-                  }}
-                  disabled={!providerKey}
-                  style={{
-                    fontSize: '0.78rem', padding: '2px 8px', borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--border)',
-                    background: !providerKey ? '#f1f5f9' : '#fff',
-                    fontFamily: 'var(--font-sans)', cursor: 'pointer', minWidth: '130px',
-                  }}
-                >
-                  {providers.find((p) => p.key === providerKey)?.models?.map((m) => (
-                    <option key={m.key} value={m.key}>{m.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Input area: textarea + send button */}
-              <form
-                onSubmit={sendMessage}
-                style={{ display: 'flex', gap: '8px', padding: '10px 14px 14px' }}
-              >
-                <textarea
-                  ref={chatInputRef}
-                  value={chatMessage}
-                  onChange={(e) => setChatMessage(e.target.value)}
-                  onInput={(e) => {
-                    e.target.style.height = 'auto';
-                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                  }}
-                  placeholder={isSending ? 'جاري صياغة الرد...' : 'اسأل مساعد الذكاء الاصطناعي...'}
-                  disabled={isSending}
-                  rows={1}
-                  style={{
-                    flex: 1, resize: 'none', overflowY: 'auto',
-                    minHeight: '40px', maxHeight: '120px',
-                    padding: '10px 12px', fontSize: '0.88rem',
-                    border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius-md)',
-                    outline: 'none', fontFamily: 'var(--font-sans)',
-                    backgroundColor: '#fff', color: 'var(--text-main)',
-                    lineHeight: '1.5',
-                  }}
-                />
-                <button
-                  type="submit"
-                  disabled={isSending || !chatMessage.trim()}
-                  style={{
-                    alignSelf: 'flex-end',
-                    minWidth: '44px', height: '40px',
-                    backgroundColor: chatMessage.trim() && !isSending ? 'var(--primary)' : 'var(--border)',
-                    color: chatMessage.trim() && !isSending ? '#fff' : 'var(--text-muted)',
-                    border: 'none', borderRadius: 'var(--radius-md)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: (isSending || !chatMessage.trim()) ? 'not-allowed' : 'pointer',
-                    transition: 'all var(--transition-fast)',
-                  }}
-                >
-                  <Send size={16} />
-                </button>
-              </form>
-            </div>
-          </div>
-        </aside>
-
-        {/* Panel 2: Center Pane - Main Workspace (Video Player + Tabbed Info) */}
-        <main 
-          style={{ 
-            flex: '1 1 auto', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            minWidth: 0,
-            overflowY: 'auto',
-            padding: '24px',
-            gap: '20px'
+          onModelChange={(e) => {
+            setModelKey(e.target.value);
+            updateSettings(getCurrentUserId(), { providerKey, modelKey: e.target.value }).catch(() => {});
           }}
-        >
-          {/* Main Video Stage with HTML5 Video Player and Key re-render */}
-          <section 
-            style={{
-              backgroundColor: '#0f172a',
-              borderRadius: 'var(--radius-lg)',
-              overflow: 'hidden',
-              boxShadow: 'var(--shadow-md)',
-              aspectRatio: '16/9',
-              maxHeight: '52vh',
-              position: 'relative',
-              width: '100%'
-            }}
-          >
-            {activeLesson.videoUrl ? (
-              <video 
-                ref={videoRef}
-                key={activeLesson.id}
-                src={resolveMediaUrl(activeLesson.videoUrl)} 
-                controls 
-                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-              />
-            ) : (
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  width: '100%', 
-                  height: '100%',
-                  gap: '12px',
-                  color: 'white'
-                }}
-              >
-                <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.08)', display: 'grid', placeItems: 'center' }}>
-                  <Video size={28} style={{ color: 'rgba(255,255,255,0.6)' }} />
-                </div>
-                <strong style={{ fontSize: '1.15rem', fontWeight: '800' }}>لم يتم رفع فيديو لهذا الدرس بعد</strong>
-                <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{activeLesson.title}</p>
-              </div>
-            )}
-          </section>
+          chatMessage={chatMessage}
+          onChatMessageChange={setChatMessage}
+          onSubmit={sendMessage}
+          chatInputRef={chatInputRef}
+        />
 
-          {/* Dynamic Smart AI Prompt trigger button underneath video */}
-          <div 
-            style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              margin: '2px 0', 
-              flexWrap: 'wrap', 
-              gap: '12px' 
-            }}
-          >
-            <h1 style={{ fontSize: '1.35rem', fontWeight: '900', color: 'var(--text-main)', fontFamily: 'var(--font-display)', margin: 0 }}>
-              {activeLesson.title}
-            </h1>
-            
-            {/* Quiz Button */}
-            <Link
-              to={`/study/${courseId}/lesson/${lessonId}/quizzes`}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                minHeight: '38px',
-                padding: '0 16px',
-                backgroundColor: 'var(--success-soft)',
-                color: '#065f46',
-                border: '1px solid var(--success-border)',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '0.84rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-                boxShadow: 'var(--shadow-sm)',
-                transition: 'all var(--transition-fast)',
-                textDecoration: 'none'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--success)';
-                e.currentTarget.style.color = '#ffffff';
-                e.currentTarget.style.transform = 'scale(1.02)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--success-soft)';
-                e.currentTarget.style.color = '#065f46';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              <FileText size={16} /> الاختبارات
-            </Link>
+        <LessonVideoPane
+          activeLesson={activeLesson}
+          videoRef={videoRef}
+          showDetails={showDetails}
+          onToggleDetails={() => setShowDetails(false)}
+          courseId={courseId}
+          lessonId={lessonId}
+          onSmartPrompt={handleSmartPrompt}
+        />
 
-            {/* The Smart AI Prompt Button */}
-            <button
-              onClick={handleSmartPrompt}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                minHeight: '38px',
-                padding: '0 16px',
-                backgroundColor: 'var(--primary-soft)',
-                color: 'var(--primary)',
-                border: '1px solid var(--primary-border)',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '0.84rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-                boxShadow: 'var(--shadow-sm)',
-                transition: 'all var(--transition-fast)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--primary)';
-                e.currentTarget.style.color = '#ffffff';
-                e.currentTarget.style.transform = 'scale(1.02)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--primary-soft)';
-                e.currentTarget.style.color = 'var(--primary)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              <Sparkles size={16} /> لم تفهم هذه النقطة؟
-            </button>
-          </div>
-
-          {/* Tabbed details block (collapsible using showDetails state) */}
-          <div 
-            style={{ 
-              height: showDetails ? 'auto' : '0px', 
-              overflow: 'hidden', 
-              transition: 'all 0.3s ease-in-out',
-              opacity: showDetails ? 1 : 0
-            }}
-          >
-            <section 
-              className="premium-card"
-              style={{
-                display: 'flex',
-                flexDirection: 'column'
-              }}
-            >
-              {/* Header */}
-              <div 
-                style={{
-                  display: 'flex',
-                  borderBottom: '1px solid var(--glass-border)',
-                  backgroundColor: 'var(--glass-bg)',
-                  borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-                  padding: '14px 20px',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <h3 style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  <FileText size={16} /> تفاصيل الدرس وتفريغ الفيديو
-                </h3>
-                <button 
-                  onClick={() => setShowDetails(false)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: '700' }}
-                >
-                  طوي <ChevronUp size={14} />
-                </button>
-              </div>
-
-              {/* Body Content */}
-              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                <p style={{ fontSize: '0.92rem', color: 'var(--text-main)', lineHeight: '1.7', whiteSpace: 'pre-line', margin: 0 }}>
-                  {activeLesson.description || 'لا يوجد وصف تفصيلي متوفر لهذا الدرس.'}
-                </p>
-                
-                {/* Automated Transcript */}
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                  <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 8px 0' }}>
-                    <AlignLeft size={16} /> تفريغ الفيديو التلقائي
-                  </h4>
-                  <div 
-                    style={{ 
-                      backgroundColor: 'var(--surface-raised)', 
-                      padding: '16px', 
-                      borderRadius: 'var(--radius-md)', 
-                      border: '1px solid var(--border)',
-                      fontSize: '0.88rem',
-                      color: 'var(--text-main)',
-                      lineHeight: '1.8',
-                      maxHeight: '160px',
-                      overflowY: 'auto'
-                    }}
-                  >
-                    {activeLesson.transcript || 'لم يتم توليد تفريغ نصي تلقائي لهذا الفيديو بعد.'}
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-        </main>
-
-        {/* Panel 3: Left-Center Pane - Sibling Syllabus (Collapsible with showLessons state) */}
-        <aside 
-          style={{
-            width: showLessons ? '280px' : '0px',
-            overflow: 'hidden',
-            transition: 'width 0.3s ease-in-out, border-left 0.3s ease-in-out',
-            backgroundColor: 'var(--glass-bg)',
-            backdropFilter: 'blur(var(--glass-blur))',
-            WebkitBackdropFilter: 'blur(var(--glass-blur))',
-            borderLeft: showLessons ? '1px solid var(--glass-border)' : 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            flexShrink: 0
-          }}
-        >
-          {/* Fixed width clip interior wrapper */}
-          <div style={{ width: '280px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '14px 18px',
-                borderBottom: '1px solid var(--glass-border)',
-                backgroundColor: 'var(--glass-bg)'
-              }}
-            >
-              <span style={{ fontSize: '0.8rem', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <BookOpen size={14} /> المنهج ({lessons.length})
-              </span>
-              <button 
-                onClick={() => setShowLessons(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
-              >
-                <X size={14} />
-              </button>
-            </div>
-            
-            <div style={{ overflowY: 'auto', flex: 1, padding: '12px' }}>
-              {lessons.length === 0 ? (
-                <div style={{ padding: '24px 8px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <p style={{ fontSize: '0.82rem', margin: 0 }}>لا توجد دروس متوفرة منهجياً.</p>
-                </div>
-              ) : (
-                lessons.map((lesson, index) => {
-                  const isActive = String(lesson.id) === String(lessonId);
-                  return (
-                    <button
-                      key={lesson.id}
-                      onClick={() => navigate(`/study-room/${courseId}/lesson/${lesson.id}`)}
-                      className="lesson-nav-btn"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        width: '100%',
-                        padding: '12px 14px',
-                        margin: '2px 0',
-                        border: isActive ? '1px solid var(--primary-border)' : '1px solid transparent',
-                        borderRadius: 'var(--radius-md)',
-                        backgroundColor: isActive ? 'var(--primary-soft)' : 'transparent',
-                        textAlign: 'right',
-                        cursor: 'pointer',
-                        transition: 'all var(--transition-fast)'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isActive) e.currentTarget.style.backgroundColor = 'var(--surface-raised)';
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
-                    >
-                      <span 
-                        style={{ 
-                          display: 'grid', 
-                          placeItems: 'center', 
-                          width: '22px', 
-                          height: '22px', 
-                          borderRadius: '50%', 
-                          fontSize: '0.75rem', 
-                          fontWeight: '800',
-                          color: isActive ? '#ffffff' : 'var(--text-muted)',
-                          backgroundColor: isActive ? 'var(--primary)' : 'var(--surface-raised)',
-                          border: isActive ? '1px solid var(--primary)' : '1px solid var(--border)'
-                        }}
-                      >
-                        {index + 1}
-                      </span>
-                      <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
-                        <strong 
-                          style={{ 
-                            display: 'block', 
-                            fontSize: '0.84rem', 
-                            fontWeight: '700', 
-                            color: isActive ? 'var(--primary)' : 'var(--text-main)',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                          }}
-                        >
-                          {lesson.title}
-                        </strong>
-                        <small style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <Clock size={12} /> {lesson.duration || '00:00'}
-                        </small>
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </aside>
-
-
-
+        <LessonNavPanel
+          show={showLessons}
+          onClose={() => setShowLessons(false)}
+          lessons={lessons}
+          activeLessonId={lessonId}
+          onNavigate={(id) => navigate(`/study-room/${courseId}/lesson/${id}`)}
+        />
       </div>
     </div>
+  );
+}
+
+function HeaderToggleButton({ active, onClick, title, icon: Icon }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={cn(
+        'flex size-8 items-center justify-center rounded-sm transition-all duration-200 ease-in-out',
+        active ? 'bg-primary-soft text-primary' : 'text-muted-foreground hover:bg-surface-raised'
+      )}
+    >
+      <Icon className="size-[18px]" />
+    </button>
   );
 }
