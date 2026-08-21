@@ -8,7 +8,6 @@
 } from 'react-router-dom';
 import RoleRoute, { ROLE_ADMIN, ROLE_STUDENT, ROLE_TEACHER } from './components/RoleRoute';
 import Sidebar from './components/Sidebar';
-import './App.css';
 
 // Import extracted pages
 import LandingPage from './pages/LandingPage';
@@ -171,8 +170,7 @@ function AppShell() {
   const location = useLocation();
 
   return (
-    <div 
-      className="app-shell" 
+    <div
       data-path={location.pathname}
       style={{
         display: 'flex',
