@@ -1,24 +1,26 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { FolderTree, Folder, Tag, Plus, Pencil, Check, Trash2, Users, ShieldAlert } from 'lucide-react';
 import api, { getStoredUser } from '../../services/api';
-import PageFrame from '../../components/ui/PageFrame';
-import TextField from '../../components/ui/TextField';
-import ImagePicker from '../../components/ui/ImagePicker';
+import PageShell from '@/components/ui/page-shell';
+import PageHeader from '@/components/ui/page-header';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import FormField from '@/components/ui/form-field';
+import ImagePicker from '@/components/ui/ImagePicker';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
+import EmptyState from '@/components/ui/empty-state';
+import { cn } from '@/lib/utils';
+import { isAdmin } from '@/lib/roles';
 import { normalizeCategory } from '../../utils/constants';
 
-/**
- * لوحة إدارة التصنيفات والمناهج الدراسية (CategoriesManager)
- * تمكن المشرفين من تنظيم شجرة التخصصات الأكاديمية (إضافة، تعديل مسميات، وحذف الأقسام) 
- * مع تكوين شجرة مرئية تفاعلية ودعم كامل لاتساق الجداول بالخلفية.
- */
 export default function CategoriesManager() {
   const currentUser = getStoredUser();
+  const userIsAdmin = isAdmin(currentUser);
 
-  // 🛡️ 1. التحقق الصارم من صلاحية الأدمن في الواجهة لحجب الصفحة عن غير المخولين
-  const roleStr = String(currentUser?.role?.name || currentUser?.role || '').toUpperCase();
-  const isAdmin = roleStr.includes('ADMIN');
-
-  // حالات الواجهة (States)
   const [items, setItems] = useState([]);
   const [name, setName] = useState('');
   const [parentId, setParentId] = useState('');
@@ -26,25 +28,22 @@ export default function CategoriesManager() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // بناء الهيكل الشجري للتصنيفات محلياً اعتماداً على الحالات المستدعاة
   const tree = useMemo(() => buildCategoryTree(items), [items]);
 
-  // تحميل شجرة التصنيفات بالكامل من قاعدة البيانات H2
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!userIsAdmin) return;
 
     let isMounted = true;
     async function loadCategoriesTree() {
       try {
         setLoading(true);
-        // 1. جلب الأقسام الرئيسية أولاً
         const rootResponse = await api.get('/categories/root');
         const rootCategories = rootResponse.data.map((category) => normalizeCategory(category));
-        
-        // 2. جلب الأقسام الفرعية بشكل ديناميكي لكل قسم رئيسي
+
         const childResponses = await Promise.all(
-          rootCategories.map((category) => 
+          rootCategories.map((category) =>
             api.get(`/categories/${category.id}/sub`).catch(() => ({ data: [] }))
           )
         );
@@ -70,9 +69,8 @@ export default function CategoriesManager() {
     return () => {
       isMounted = false;
     };
-  }, [isAdmin]);
+  }, [userIsAdmin]);
 
-  // إخفاء رسائل التنبيه بعد 4 ثوانٍ
   useEffect(() => {
     if (successMsg || errorMsg) {
       const timer = setTimeout(() => {
@@ -83,29 +81,27 @@ export default function CategoriesManager() {
     }
   }, [successMsg, errorMsg]);
 
-  // 🛡️ عرض شاشة الرفض الأنيقة في حال الدخول غير المصرح
-  if (!isAdmin) {
+  if (!userIsAdmin) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', fontFamily: 'var(--font-sans)', direction: 'rtl', padding: '20px' }}>
-        <div className="premium-card animate-fade-in" style={{ maxWidth: '500px', width: '100%', borderRadius: 'var(--radius-lg)', padding: '40px 30px', textAlign: 'center' }}>
-          <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(239, 68, 68, 0.08)', display: 'grid', placeItems: 'center', margin: '0 auto 24px auto', color: 'var(--error)' }}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '40px', height: '40px' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-            </svg>
+      <PageShell>
+        <Card className="mx-auto flex max-w-md flex-col items-center gap-4 p-10 text-center">
+          <div className="flex size-14 items-center justify-center rounded-full bg-error-soft text-error">
+            <ShieldAlert className="size-7" />
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '12px' }}>غير مصرح بالدخول!</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '28px' }}>
-            عذراً، تحتاج لصلاحية مدير النظام (Admin) للتمكن من تعديل أقسام الفهرس الأكاديمي.
-          </p>
-          <Link to="/" className="primary-button" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '12px 28px', backgroundColor: 'var(--primary)', color: 'var(--text-inverse)', textDecoration: 'none', borderRadius: 'var(--radius-md)', fontWeight: '700', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)' }}>
+          <div>
+            <h2 className="font-display text-xl font-semibold text-foreground">غير مصرح بالدخول</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              عذراً، تحتاج لصلاحية مدير النظام (Admin) للتمكن من تعديل أقسام الفهرس الأكاديمي.
+            </p>
+          </div>
+          <Button as={Link} to="/">
             العودة للرئيسية
-          </Link>
-        </div>
-      </div>
+          </Button>
+        </Card>
+      </PageShell>
     );
   }
 
-  // إضافة تصنيف جديد
   async function addCategory(event) {
     event.preventDefault();
     if (!name.trim()) return;
@@ -120,7 +116,6 @@ export default function CategoriesManager() {
 
       let created = response.data;
 
-      // رفع الصورة المرفقة (إن وجدت) في خطوة ثانية فور إنشاء القسم
       if (imageFile) {
         const formData = new FormData();
         formData.append('image', imageFile);
@@ -132,7 +127,6 @@ export default function CategoriesManager() {
         }
       }
 
-      // دمج القسم الجديد في شجرة الواجهة فوراً
       setItems((current) => [...current, normalizeCategory(created, parentId ? Number(parentId) : null)]);
       setSuccessMsg(`تم إنشاء التصنيف الأكاديمي "${name}" بنجاح.`);
       setName('');
@@ -144,21 +138,22 @@ export default function CategoriesManager() {
     }
   }
 
-  // حذف قسم دراسي
-  async function deleteCategory(id) {
+  async function handleConfirmDelete() {
     try {
-      await api.delete(`/categories/${id}`);
-      // إزالة التصنيف وفروعه محلياً في حال نجاح الطلب
-      setItems((current) => current.filter((item) => item.id !== id && item.parentId !== id));
+      await api.delete(`/categories/${deleteTarget.id}`);
+      setItems((current) => current.filter((item) => item.id !== deleteTarget.id && item.parentId !== deleteTarget.id));
       setSuccessMsg('تم حذف التصنيف المحدد بنجاح.');
     } catch (err) {
       console.error('Failed to delete category:', err);
-      // معالجة القيد البرمجي في حال وجود أطفال للقسم الحاضن
-      setErrorMsg('لا يمكن حذف هذا القسم الرئيسي لأنه يحتوي على أقسام فرعية نشطة! يرجى إزالة الأقسام الفرعية أولاً.');
+      const backendMessage = err.response?.data?.error || '';
+      setErrorMsg(
+        backendMessage.includes('parent category')
+          ? 'لا يمكن حذف هذا القسم لأنه يحتوي على أقسام فرعية نشطة. يرجى حذف الأقسام الفرعية أولاً.'
+          : backendMessage || 'تعذر حذف هذا التصنيف. يرجى التحقق من اتصال الخادم والمحاولة مرة أخرى.'
+      );
     }
   }
 
-  // إعادة تسمية قسم
   async function renameCategory(category, nextName) {
     if (!nextName.trim() || nextName === category.name) return;
 
@@ -168,9 +163,7 @@ export default function CategoriesManager() {
         parent: category.parentId ? { id: category.parentId } : null,
       });
 
-      setItems((current) => current.map((item) => 
-        item.id === category.id ? { ...item, name: nextName } : item
-      ));
+      setItems((current) => current.map((item) => (item.id === category.id ? { ...item, name: nextName } : item)));
       setSuccessMsg('تم تحديث وتعديل اسم القسم الأكاديمي.');
     } catch (err) {
       console.error('Failed to rename category:', err);
@@ -179,120 +172,66 @@ export default function CategoriesManager() {
   }
 
   return (
-    <PageFrame 
-      eyebrow="لوحة التحكم الإشرافية" 
-      title="مخطط شجرة التصنيفات التعليمية" 
-      actions={
-        <Link 
-          className="secondary-button" 
-          to="/admin/users"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            minHeight: '40px',
-            padding: '0 18px',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)',
-            fontWeight: '700',
-            fontSize: '0.88rem',
-            backgroundColor: 'var(--surface)',
-            color: 'var(--text-main)',
-            textDecoration: 'none',
-            boxShadow: 'var(--shadow-sm)'
-          }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '16px', height: '16px' }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-          </svg>
-          التحكم بالأعضاء والكورسات
-        </Link>
-      }
-    >
-      <div 
-        style={{ 
-          direction: 'rtl',
-          fontFamily: 'var(--font-sans)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '24px'
-        }}
-      >
-        {/* التنبيهات المؤقتة */}
-        {successMsg && (
-          <div style={{ padding: '14px 20px', backgroundColor: 'rgba(34, 197, 94, 0.08)', borderRight: '4px solid var(--success)', borderRadius: 'var(--radius-md)', color: 'var(--success)', fontSize: '0.925rem', fontWeight: '700' }} className="animate-fade-in">
-            ✓ {successMsg}
-          </div>
-        )}
-        {errorMsg && (
-          <div style={{ padding: '14px 20px', backgroundColor: 'rgba(239, 68, 68, 0.08)', borderRight: '4px solid var(--error)', borderRadius: 'var(--radius-md)', color: 'var(--error)', fontSize: '0.925rem', fontWeight: '700' }} className="animate-fade-in">
-            ⚠ {errorMsg}
-          </div>
-        )}
+    <PageShell>
+      <PageHeader
+        eyebrow="لوحة التحكم الإشرافية"
+        title="مخطط شجرة التصنيفات التعليمية"
+        actions={
+          <Button as={Link} to="/admin/users" variant="outline">
+            <Users className="size-4" />
+            التحكم بالأعضاء والكورسات
+          </Button>
+        }
+      />
 
-        <div 
-          style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
-            gap: '30px',
-            alignItems: 'start'
-          }}
-        >
-          {/* اليمين: نموذج إضافة تصنيف أكاديمي جديد */}
-          <form 
-            onSubmit={addCategory}
-            className="premium-card"
-            style={{
-              padding: '28px',
-              borderRadius: 'var(--radius-lg)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '18px'
-            }}
-          >
-            <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', margin: '0 0 10px 0', borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px' }}>
-              ➕ إضافة تصنيف أكاديمي جديد
-            </h2>
-            
-            <TextField 
-              label="اسم التصنيف (بالعربية أو الإنجليزية)" 
-              value={name} 
-              onChange={setName} 
-              placeholder="مثال: هندسة البرمجيات، قواعد البيانات"
-            />
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ color: 'var(--text-main)', fontSize: '0.88rem', fontWeight: '800' }}>
-                التصنيف الأب الحاضن (Parent Category)
-              </label>
-              <select 
-                value={parentId} 
-                onChange={(event) => setParentId(event.target.value)}
-                style={{
-                  width: '100%',
-                  minHeight: '44px',
-                  padding: '0 12px',
-                  fontSize: '0.925rem',
-                  color: 'var(--text-main)',
-                  backgroundColor: 'var(--glass-input-bg)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-md)',
-                  outline: 'none',
-                  boxShadow: 'var(--shadow-sm)',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="">📁 قسم رئيسي مستفل (بدون أب)</option>
-                {items.filter(item => !item.parentId).map((item) => (
-                  <option key={item.id} value={item.id}>
-                    🏷️ {item.name}
-                  </option>
-                ))}
-              </select>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                اختر قسماً رئيسياً لجعله فرعاً تحته، أو اتركه فارغاً لجعله قسماً رئيسياً كبيراً بالفهرس.
-              </span>
-            </div>
+      {(successMsg || errorMsg) && (
+        <div className="mb-6">
+          {successMsg && (
+            <Alert variant="success">
+              <AlertDescription>{successMsg}</AlertDescription>
+            </Alert>
+          )}
+          {errorMsg && (
+            <Alert variant="destructive">
+              <AlertDescription>{errorMsg}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-2">
+        <Card className="p-7">
+          <h2 className="mb-5 flex items-center gap-2 border-b border-border pb-4 font-display text-lg font-semibold text-foreground">
+            <Plus className="size-5 text-muted-foreground" />
+            إضافة تصنيف أكاديمي جديد
+          </h2>
+
+          <form onSubmit={addCategory} className="flex flex-col gap-5">
+            <FormField label="اسم التصنيف (بالعربية أو الإنجليزية)" htmlFor="category-name">
+              <Input
+                id="category-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="مثال: هندسة البرمجيات، قواعد البيانات"
+              />
+            </FormField>
+
+            <FormField
+              label="التصنيف الأب الحاضن (Parent Category)"
+              htmlFor="category-parent"
+              hint="اختر قسماً رئيسياً لجعله فرعاً تحته، أو اتركه فارغاً لجعله قسماً رئيسياً بالفهرس."
+            >
+              <Select id="category-parent" value={parentId} onChange={(e) => setParentId(e.target.value)}>
+                <option value="">قسم رئيسي مستقل (بدون أب)</option>
+                {items
+                  .filter((item) => !item.parentId)
+                  .map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+              </Select>
+            </FormField>
 
             <ImagePicker
               label="صورة التصنيف (اختياري)"
@@ -300,74 +239,54 @@ export default function CategoriesManager() {
               onChange={setImageFile}
             />
 
-            <button
-              className="primary-button" 
-              type="submit"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '44px',
-                backgroundColor: 'var(--primary)',
-                color: 'var(--text-inverse)',
-                border: 'none',
-                borderRadius: 'var(--radius-md)',
-                fontWeight: '800',
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)',
-                transition: 'all var(--transition-fast)'
-              }}
-            >
+            <Button type="submit" size="lg">
               حفظ وتثبيت التصنيف
-            </button>
+            </Button>
           </form>
+        </Card>
 
-          {/* اليسار: المعاينة الحية وشجرة التفرعات الهرمية */}
-          <div 
-            className="premium-card"
-            style={{
-              padding: '28px',
-              borderRadius: 'var(--radius-lg)'
-            }}
-          >
-            <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', margin: '0 0 16px 0', borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px' }}>
-              🌳 الهيكل التنظيمي للتصنيفات الأكاديمية
-            </h2>
-            
-            {loading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {[1, 2, 3].map((n) => (
-                  <div key={n} style={{ height: '40px', backgroundColor: 'var(--bg)', borderRadius: 'var(--radius-md)' }} className="animate-pulse" />
-                ))}
-              </div>
-            ) : items.length === 0 ? (
-              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                لا توجد تصنيفات معرفة حتى الآن، ابدأ بإضافة تصنيف جديد باليمين.
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingRight: '10px' }}>
-                {tree.map((category) => (
-                  <CategoryNode 
-                    key={category.id} 
-                    category={category} 
-                    onDelete={deleteCategory} 
-                    onRename={renameCategory} 
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <Card className="p-7">
+          <h2 className="mb-5 flex items-center gap-2 border-b border-border pb-4 font-display text-lg font-semibold text-foreground">
+            <FolderTree className="size-5 text-muted-foreground" />
+            الهيكل التنظيمي للتصنيفات الأكاديمية
+          </h2>
+
+          {loading ? (
+            <div className="flex flex-col gap-2.5">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="h-11 animate-pulse rounded-md bg-surface-raised" />
+              ))}
+            </div>
+          ) : tree.length === 0 ? (
+            <EmptyState
+              icon={FolderTree}
+              title="لا توجد تصنيفات معرفة حتى الآن"
+              description="ابدأ بإضافة تصنيف جديد من النموذج المجاور."
+            />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {tree.map((category) => (
+                <CategoryNode key={category.id} category={category} onRequestDelete={setDeleteTarget} onRename={renameCategory} />
+              ))}
+            </div>
+          )}
+        </Card>
       </div>
-    </PageFrame>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="حذف التصنيف"
+        description={`هل أنت متأكد من حذف تصنيف "${deleteTarget?.name}"؟ لا يمكن التراجع عن هذا الإجراء.`}
+        confirmLabel="حذف"
+        destructive
+        onConfirm={handleConfirmDelete}
+      />
+    </PageShell>
   );
 }
 
-/**
- * مكون هرمي فرعي لعرض كل عقدة تصنيف أكاديمي مع أبنائه
- */
-function CategoryNode({ category, onDelete, onRename }) {
+function CategoryNode({ category, onRequestDelete, onRename }) {
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(category.name);
 
@@ -378,112 +297,59 @@ function CategoryNode({ category, onDelete, onRename }) {
     setEditing(false);
   }
 
-  // هل هذه العقدة هي تصنيف رئيسي (جذر)؟
   const isRoot = !category.parentId;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-      <div 
-        style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          padding: '10px 14px',
-          backgroundColor: isRoot ? 'var(--bg)' : 'transparent',
-          border: isRoot ? '1px solid var(--border)' : '1px dashed var(--border)',
-          borderRadius: 'var(--radius-md)',
-          boxShadow: isRoot ? 'var(--shadow-sm)' : 'none'
-        }}
+    <div className="flex flex-col gap-2">
+      <div
+        className={cn(
+          'flex items-center justify-between gap-3 rounded-md px-3.5 py-2.5',
+          isRoot ? 'border border-border bg-background shadow-soft' : 'border border-dashed border-border'
+        )}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-          <span style={{ fontSize: '1.1rem' }}>
-            {isRoot ? '📁' : '🏷️'}
-          </span>
-          
+        <div className="flex flex-1 items-center gap-2">
+          {isRoot ? (
+            <Folder className="size-4 shrink-0 text-muted-foreground" />
+          ) : (
+            <Tag className="size-4 shrink-0 text-muted-foreground" />
+          )}
+
           {editing ? (
-            <input 
-              value={label} 
-              onChange={(event) => setLabel(event.target.value)} 
-              onKeyDown={(e) => { if (e.key === 'Enter') saveLabel(); }}
-              style={{
-                padding: '4px 8px',
-                fontSize: '0.88rem',
-                border: '1px solid var(--primary)',
-                borderRadius: '4px',
-                backgroundColor: 'var(--glass-input-bg)',
-                color: 'var(--text-main)',
-                outline: 'none',
-                width: '180px'
+            <Input
+              autoFocus
+              value={label}
+              onChange={(event) => setLabel(event.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveLabel();
               }}
+              className="h-8 w-44 px-2 text-sm"
             />
           ) : (
-            <strong style={{ fontSize: '0.925rem', fontWeight: isRoot ? '800' : '600', color: 'var(--text-main)' }}>
-              {label}
-            </strong>
+            <strong className={cn('text-sm text-foreground', isRoot ? 'font-bold' : 'font-medium')}>{label}</strong>
           )}
         </div>
-        
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button 
-            onClick={editing ? saveLabel : () => setEditing(true)}
-            style={{
-              minHeight: '28px',
-              padding: '0 10px',
-              fontSize: '0.78rem',
-              fontWeight: '700',
-              borderRadius: '4px',
-              border: '1px solid var(--border)',
-              backgroundColor: 'var(--surface)',
-              color: 'var(--primary)',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--surface)'}
+
+        <div className="flex shrink-0 gap-2">
+          <Button variant="outline" size="sm" className="h-7 px-2.5 text-xs" onClick={editing ? saveLabel : () => setEditing(true)}>
+            {editing ? <Check className="size-3.5" /> : <Pencil className="size-3.5" />}
+            {editing ? 'حفظ' : 'تعديل'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 border-error-border px-2.5 text-xs text-error hover:bg-error-soft"
+            onClick={() => onRequestDelete(category)}
           >
-            {editing ? 'حفظ التغيير' : 'تعديل التسمية'}
-          </button>
-          <button 
-            onClick={() => onDelete(category.id)}
-            style={{
-              minHeight: '28px',
-              padding: '0 10px',
-              fontSize: '0.78rem',
-              fontWeight: '700',
-              borderRadius: '4px',
-              border: '1px solid var(--border)',
-              backgroundColor: 'var(--surface)',
-              color: 'var(--error)',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.05)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--surface)'}
-          >
+            <Trash2 className="size-3.5" />
             حذف
-          </button>
+          </Button>
         </div>
       </div>
-      
-      {/* عرض الأبناء (التصنيفات الفرعية) هرمياً تحت هذا القسم */}
+
       {category.children.length > 0 && (
-        <div 
-          style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '8px', 
-            paddingRight: '20px', 
-            borderRight: '1px dashed var(--border)',
-            marginRight: '14px'
-          }}
-        >
+        <div className="me-3.5 flex flex-col gap-2 border-e border-dashed border-border pe-5">
           {category.children.map((child) => (
-            <CategoryNode 
-              key={child.id} 
-              category={child} 
-              onDelete={onDelete} 
-              onRename={onRename} 
-            />
+            <CategoryNode key={child.id} category={child} onRequestDelete={onRequestDelete} onRename={onRename} />
           ))}
         </div>
       )}
@@ -491,9 +357,6 @@ function CategoryNode({ category, onDelete, onRename }) {
   );
 }
 
-/**
- * دالة مساعدة لبناء الهيكل الهرمي شجرياً من مصفوفة خطية
- */
 function buildCategoryTree(items) {
   const byId = new Map(items.map((item) => [item.id, { ...item, children: [] }]));
   const roots = [];
