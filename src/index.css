@@ -199,10 +199,6 @@
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.animate-slide-in {
-  animation: slideIn var(--transition-normal) forwards;
-}
-
 /* Common Interactive Classes */
 .premium-card {
   background: var(--glass-bg);
@@ -218,13 +214,5 @@
   transform: translateY(-2px);
   box-shadow: var(--glass-shadow-hover);
   border-color: var(--border-hover);
-}
-
-/* Glassmorphism utility (legacy support) */
-.glassmorphic {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
 }
 

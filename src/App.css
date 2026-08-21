@@ -41,10 +41,7 @@
   }
 
   .primary-button,
-  .secondary-button,
-  .ghost-button,
-  .filter-button,
-  .table-action {
+  .secondary-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -72,20 +69,13 @@
     transform: none;
   }
 
-  .secondary-button,
-  .ghost-button,
-  .filter-button,
-  .table-action {
+  .secondary-button {
     color: var(--text-main);
     background: var(--surface);
     border-color: var(--border);
   }
 
-  .secondary-button:hover,
-  .ghost-button:hover,
-  .filter-button:hover,
-  .table-action:hover,
-  .filter-button.active {
+  .secondary-button:hover {
     color: var(--primary);
     border-color: var(--primary-border);
     background: var(--primary-soft);
