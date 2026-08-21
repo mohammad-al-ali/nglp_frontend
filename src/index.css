@@ -131,13 +131,19 @@
   --quiz-hero-bg: #ffffff;
   --quiz-highlight: #4345c4;
 
-  /* Glassmorphism Core Tokens (kept for legacy pages; neutralized) */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-blur: 12px;
-  --glass-border: #e4e4e7;
-  --glass-shadow: 0 1px 2px rgba(24, 24, 27, 0.04);
-  --glass-shadow-hover: 0 4px 12px rgba(24, 24, 27, 0.08);
-  --glass-input-bg: rgba(255, 255, 255, 0.9);
+  /*
+   * Flattened glass. `.premium-card` (48 call sites) and Sidebar read
+   * these tokens directly, so redefining them here — rather than
+   * touching each of the 15 consuming files — makes the whole app's
+   * remaining glassmorphism render as an opaque flat surface in one
+   * commit. No component code changes; only these six values move.
+   */
+  --glass-bg: var(--color-surface);
+  --glass-blur: 0px;
+  --glass-border: var(--color-border);
+  --glass-shadow: var(--shadow-soft);
+  --glass-shadow-hover: var(--shadow-soft-lg);
+  --glass-input-bg: var(--color-surface);
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04);
