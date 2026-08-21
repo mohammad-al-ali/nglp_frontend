@@ -14,9 +14,60 @@
   --color-primary-foreground: #ffffff;
   --color-primary-soft: #eef2ff;
   --color-primary-border: #c7d2fe;
+  --color-text-inverse: #ffffff;
+
+  --color-success: #16a34a;
+  --color-success-soft: #f0fdf4;
+  --color-success-border: #bbf7d0;
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+  --color-warning-border: #fde68a;
+  --color-error: #dc2626;
+  --color-error-soft: #fef2f2;
+  --color-error-border: #fecaca;
+
+  /*
+   * shadcn/ui-canonical aliases. `npx shadcn add` emits components that
+   * reference these exact names (bg-card, text-popover-foreground,
+   * border-input, ring-ring, bg-accent, bg-muted, text-destructive, ...).
+   * Without them a generated component renders partly unstyled with no
+   * error. Mapped onto the existing neutral + indigo system rather than
+   * introducing a second palette.
+   */
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-foreground);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-foreground);
+  --color-input: var(--color-border);
+  --color-ring: var(--color-primary);
+  --color-accent: var(--color-surface-raised);
+  --color-accent-foreground: var(--color-foreground);
+  --color-muted: var(--color-surface-raised);
+  --color-secondary: var(--color-surface-raised);
+  --color-secondary-foreground: var(--color-foreground);
+  --color-destructive: var(--color-error);
+  --color-destructive-foreground: #ffffff;
+
   --font-sans: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display: 'El Messiri', 'IBM Plex Sans Arabic', sans-serif;
   --font-mono: 'IBM Plex Mono', 'IBM Plex Sans Arabic', monospace;
+
+  /*
+   * Deliberate overrides of Tailwind's built-in radius and shadow scale.
+   * These values are the project design system (see docs/DESIGN_SYSTEM.md)
+   * and must stay identical to the root copies below. Tailwind does not
+   * mirror every theme key to a global custom property, so legacy
+   * inline-style components reading var(radius-lg) etc. use the root
+   * declaration, not this one. This block exists so rounded-lg and
+   * shadow-md utilities resolve to the same numbers, instead of
+   * silently falling back to Tailwind's stock 8px and 6px scale.
+   */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04);
+  --shadow-md: 0 2px 8px rgba(24, 24, 27, 0.06);
+  --shadow-lg: 0 8px 24px rgba(24, 24, 27, 0.08);
 
   /* Soft, highly diffused elevation — cards should feel like they float, never a hard drop shadow */
   --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
@@ -24,40 +75,42 @@
 }
 
 :root {
-  --font-sans: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-display: 'El Messiri', 'IBM Plex Sans Arabic', sans-serif;
-  --font-mono: 'IBM Plex Mono', 'IBM Plex Sans Arabic', monospace;
+  /*
+   * Pure aliases onto the @theme tokens above — this block is the only
+   * place a legacy inline-style component (var(--primary) etc.) reads
+   * from. No color value is ever declared twice: change it once, in
+   * @theme, and every consumer (Tailwind utility or inline style) moves
+   * together. Do not add a literal color value below this line.
+   */
+  --bg: var(--color-background);
+  --surface: var(--color-surface);
+  --surface-raised: var(--color-surface-raised);
+  --surface-hover: var(--color-surface-raised);
 
-  /* Light-mode-only neutral scale (gray) + single indigo accent */
-  --bg: #f8fafc;
-  --surface: #ffffff;
-  --surface-raised: #f3f4f6;
-  --surface-hover: #f3f4f6;
+  --text-main: var(--color-foreground);
+  --text-muted: var(--color-muted-foreground);
+  --text-inverse: var(--color-text-inverse);
 
-  --text-main: #111827;
-  --text-muted: #4b5563;
-  --text-inverse: #ffffff;
+  --border: var(--color-border);
+  --border-focus: var(--color-primary);
+  --border-hover: var(--color-border-hover);
 
-  --border: #e5e7eb;
-  --border-focus: #4f46e5;
-  --border-hover: #d1d5db;
+  --primary: var(--color-primary);
+  --primary-hover: var(--color-primary-hover);
+  --primary-soft: var(--color-primary-soft);
+  --primary-border: var(--color-primary-border);
 
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-soft: #eef2ff;
-  --primary-border: #c7d2fe;
+  --success: var(--color-success);
+  --success-soft: var(--color-success-soft);
+  --success-border: var(--color-success-border);
 
-  --success: #16a34a;
-  --success-soft: #f0fdf4;
-  --success-border: #bbf7d0;
+  --warning: var(--color-warning);
+  --warning-soft: var(--color-warning-soft);
+  --warning-border: var(--color-warning-border);
 
-  --warning: #d97706;
-  --warning-soft: #fffbeb;
-  --warning-border: #fde68a;
-
-  --error: #dc2626;
-  --error-soft: #fef2f2;
-  --error-border: #fecaca;
+  --error: var(--color-error);
+  --error-soft: var(--color-error-soft);
+  --error-border: var(--color-error-border);
 
   /* Enhanced Glass - quiz pages (higher opacity for readability) */
   --glass-bg-enhanced: rgba(255, 255, 255, 0.9);
