@@ -24,31 +24,30 @@ export default function Sidebar() {
     fontWeight: isActive ? '700' : '500',
     color: isActive ? 'var(--primary)' : 'var(--text-muted)',
     backgroundColor: isActive ? 'var(--primary-soft)' : 'transparent',
-    borderRight: isActive ? '4px solid var(--primary)' : '4px solid transparent',
+    borderInlineStart: isActive ? '4px solid var(--primary)' : '4px solid transparent',
     textDecoration: 'none',
     transition: 'all var(--transition-fast)',
     borderRadius: '0 var(--radius-md) var(--radius-md) 0',
-    marginLeft: '12px', // leaves visual breathing room on the left
+    marginInlineEnd: '12px', // leaves visual breathing room on the outer edge
   });
 
   return (
-    <aside 
+    <aside
       style={{
         position: 'fixed',
         top: 0,
-        right: 0,
+        insetInlineStart: 0,
         height: '100vh',
-        width: '280px',
+        width: 'var(--sidebar-width)',
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(var(--glass-blur))',
         WebkitBackdropFilter: 'blur(var(--glass-blur))',
-        borderLeft: '1px solid var(--glass-border)',
+        borderInlineEnd: '1px solid var(--glass-border)',
         boxShadow: 'var(--glass-shadow)',
         display: 'flex',
         flexDirection: 'column',
         zIndex: 100,
         fontFamily: 'var(--font-sans)',
-        direction: 'rtl'
       }}
     >
       {/* Brand & IDE Logo */}
@@ -91,9 +90,9 @@ export default function Sidebar() {
             NGLP
           </span>
         </Link>
-        <span 
+        <span
           style={{
-            marginRight: 'auto',
+            marginInlineStart: 'auto',
             padding: '2px 8px',
             fontSize: '0.68rem',
             fontWeight: '700',

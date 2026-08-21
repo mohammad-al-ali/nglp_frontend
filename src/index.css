@@ -164,6 +164,7 @@
 
   /* Navigation & Layout dimensions */
   --header-height: 70px;
+  --sidebar-width: 280px;
 }
 
 /* Global Reset & Base (layered so Tailwind utilities can still override) */

@@ -128,38 +128,40 @@ function App() {
             }
           />
         </Route>
-        <Route
-          path="/study/:courseId/lesson/:lessonId"
-          element={
-            <RoleRoute allowedRoles={[ROLE_STUDENT]}>
-              <StudyRoom />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/study-room/:courseId/lesson/:lessonId"
-          element={
-            <RoleRoute allowedRoles={[ROLE_STUDENT]}>
-              <StudyRoom />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/study/:courseId/lesson/:lessonId/quizzes"
-          element={
-            <RoleRoute allowedRoles={[ROLE_STUDENT]}>
-              <StudentQuizList />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/study/:courseId/lesson/:lessonId/quiz/:quizId"
-          element={
-            <RoleRoute allowedRoles={[ROLE_STUDENT]}>
-              <QuizTaker />
-            </RoleRoute>
-          }
-        />
+        <Route element={<FullBleedShell />}>
+          <Route
+            path="/study/:courseId/lesson/:lessonId"
+            element={
+              <RoleRoute allowedRoles={[ROLE_STUDENT]}>
+                <StudyRoom />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/study-room/:courseId/lesson/:lessonId"
+            element={
+              <RoleRoute allowedRoles={[ROLE_STUDENT]}>
+                <StudyRoom />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/study/:courseId/lesson/:lessonId/quizzes"
+            element={
+              <RoleRoute allowedRoles={[ROLE_STUDENT]}>
+                <StudentQuizList />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/study/:courseId/lesson/:lessonId/quiz/:quizId"
+            element={
+              <RoleRoute allowedRoles={[ROLE_STUDENT]}>
+                <QuizTaker />
+              </RoleRoute>
+            }
+          />
+        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
@@ -175,20 +177,31 @@ function AppShell() {
       style={{
         display: 'flex',
         minHeight: '100vh',
-        direction: 'rtl'
       }}
     >
       <Sidebar />
-      <main 
-        style={{ 
-          flex: 1, 
-          marginRight: '280px',
+      <main
+        style={{
+          flex: 1,
+          marginInlineStart: 'var(--sidebar-width)',
           minHeight: '100vh',
-          transition: 'margin-right var(--transition-normal)'
+          transition: 'margin-inline-start var(--transition-normal)'
         }}
       >
         <Outlet />
       </main>
+    </div>
+  );
+}
+
+/**
+ * Layout for routes that need the full viewport with no sidebar
+ * (StudyRoom, quizzes) — still inherits RTL from <html dir="rtl">.
+ */
+function FullBleedShell() {
+  return (
+    <div style={{ minHeight: '100vh' }}>
+      <Outlet />
     </div>
   );
 }
