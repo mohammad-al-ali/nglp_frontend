@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api, { getStoredUser } from '../../services/api';
 import PageFrame from '../../components/ui/PageFrame';
 import TextField from '../../components/ui/TextField';
+import ImagePicker from '../../components/ui/ImagePicker';
 import { normalizeCategory } from '../../utils/constants';
 
 /**
@@ -21,6 +22,7 @@ export default function CategoriesManager() {
   const [items, setItems] = useState([]);
   const [name, setName] = useState('');
   const [parentId, setParentId] = useState('');
+  const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -116,11 +118,26 @@ export default function CategoriesManager() {
         parent: parentCategoryObj,
       });
 
+      let created = response.data;
+
+      // رفع الصورة المرفقة (إن وجدت) في خطوة ثانية فور إنشاء القسم
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        try {
+          const imageResponse = await api.post(`/categories/${created.id}/image`, formData);
+          created = imageResponse.data;
+        } catch (imageErr) {
+          console.warn('Failed to upload category image.', imageErr);
+        }
+      }
+
       // دمج القسم الجديد في شجرة الواجهة فوراً
-      setItems((current) => [...current, normalizeCategory(response.data, parentId ? Number(parentId) : null)]);
+      setItems((current) => [...current, normalizeCategory(created, parentId ? Number(parentId) : null)]);
       setSuccessMsg(`تم إنشاء التصنيف الأكاديمي "${name}" بنجاح.`);
       setName('');
       setParentId('');
+      setImageFile(null);
     } catch (err) {
       console.error('Failed to create category:', err);
       setErrorMsg('فشل حفظ القسم الجديد بالخلفية. تأكد من إعدادات الاتصال.');
@@ -276,8 +293,14 @@ export default function CategoriesManager() {
                 اختر قسماً رئيسياً لجعله فرعاً تحته، أو اتركه فارغاً لجعله قسماً رئيسياً كبيراً بالفهرس.
               </span>
             </div>
-            
-            <button 
+
+            <ImagePicker
+              label="صورة التصنيف (اختياري)"
+              hint="تظهر كأيقونة تعريفية للتصنيف في الفهرس."
+              onChange={setImageFile}
+            />
+
+            <button
               className="primary-button" 
               type="submit"
               style={{

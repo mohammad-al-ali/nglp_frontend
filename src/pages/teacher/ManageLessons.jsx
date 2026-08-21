@@ -4,6 +4,7 @@ import api, { getCurrentUserId } from '../../services/api';
 import PageFrame from '../../components/ui/PageFrame';
 import TextField from '../../components/ui/TextField';
 import ProgressBar from '../../components/ui/ProgressBar';
+import ImagePicker from '../../components/ui/ImagePicker';
 import { normalizeCourse, normalizeLesson } from '../../utils/constants';
 
 export default function ManageLessons() {
@@ -160,20 +161,25 @@ export default function ManageLessons() {
     const title = lessonTitle.trim() || file.name.replace(/\.mp4$/i, '');
     const description = lessonDescription.trim();
     
-    const newQueueItem = { 
-      id: queueId, 
-      title, 
+    const newQueueItem = {
+      id: queueId,
+      title,
       description,
-      fileName: file.name, 
+      fileName: file.name,
       file: file, // Keep raw File object reference
-      progress: 0, 
+      imageFile: null, // صورة مصغرة اختيارية للدرس
+      progress: 0,
       status: 'pending', // 'pending' | 'uploading' | 'processing' | 'completed' | 'error'
-      transcript: null 
+      transcript: null
     };
-    
+
     setUploadQueue((current) => [...current, newQueueItem]);
     setLessonTitle('');
     setLessonDescription('');
+  }
+
+  function setQueueItemImage(itemId, imageFile) {
+    setUploadQueue((current) => current.map((item) => (item.id === itemId ? { ...item, imageFile } : item)));
   }
 
   // Simulated offline/sandbox helper for safe uploads
@@ -262,6 +268,9 @@ export default function ManageLessons() {
         )
       );
       formData.append('file', item.file);
+      if (item.imageFile) {
+        formData.append('image', item.imageFile);
+      }
 
       try {
         const response = await api.post(`/lessons/${currentCourseId}`, formData, {
@@ -678,6 +687,13 @@ export default function ManageLessons() {
                             </span>
                           </div>
 
+                          {isPending && (
+                            <ImagePicker
+                              label="صورة مصغرة للدرس (اختياري)"
+                              onChange={(file) => setQueueItemImage(item.id, file)}
+                            />
+                          )}
+
                           {!isCompleted && !isPending && (
                             <ProgressBar value={item.progress} />
                           )}
@@ -787,23 +803,37 @@ export default function ManageLessons() {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '0' }}>
-                        <span 
-                          style={{
-                            fontSize: '0.85rem',
-                            fontWeight: '800',
-                            color: 'var(--text-muted)',
-                            backgroundColor: 'var(--surface-raised)',
-                            width: '26px',
-                            height: '26px',
-                            borderRadius: '50px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}
-                        >
-                          {idx + 1}
-                        </span>
+                        {lesson.imageUrl ? (
+                          <img
+                            src={lesson.imageUrl}
+                            alt=""
+                            style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: 'var(--radius-md)',
+                              objectFit: 'cover',
+                              flexShrink: 0
+                            }}
+                          />
+                        ) : (
+                          <span
+                            style={{
+                              fontSize: '0.85rem',
+                              fontWeight: '800',
+                              color: 'var(--text-muted)',
+                              backgroundColor: 'var(--surface-raised)',
+                              width: '26px',
+                              height: '26px',
+                              borderRadius: '50px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}
+                          >
+                            {idx + 1}
+                          </span>
+                        )}
                         <div style={{ minWidth: '0' }}>
                           <strong style={{ display: 'block', fontSize: '0.88rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {lesson.title}

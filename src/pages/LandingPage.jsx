@@ -1,16 +1,17 @@
-import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import api from '../services/api';
-import { categories as defaultCategories, courses as defaultCourses, categoryMatches, normalizeCategory, normalizeCourse } from '../utils/constants';
-import CourseGrid from '../components/CourseGrid';
-import GlassHeroPreview from '../components/GlassHeroPreview';
+import { categories as defaultCategories, courses as defaultCourses, normalizeCategory, normalizeCourse } from '../utils/constants';
+import Hero from '@/components/home/Hero';
+import CategoryList from '@/components/home/CategoryList';
+import CourseCard from '@/components/home/CourseCard';
+import { Badge } from '@/components/ui/badge';
 
 export default function LandingPage() {
-  const [catalogState, setCatalogState] = useState({ 
-    categories: defaultCategories, 
-    courses: defaultCourses, 
-    loading: true, 
-    source: 'sample' 
+  const [catalogState, setCatalogState] = useState({
+    categories: defaultCategories,
+    courses: defaultCourses,
+    loading: true,
+    source: 'sample',
   });
 
   useEffect(() => {
@@ -20,14 +21,14 @@ export default function LandingPage() {
       try {
         const rootResponse = await api.get('/categories/root');
         const rootCategories = rootResponse.data.map((category) => normalizeCategory(category));
-        
+
         const childResponses = await Promise.all(
           rootCategories.map((category) => api.get(`/categories/${category.id}/sub`).catch(() => ({ data: [] })))
         );
         const childCategories = childResponses.flatMap((response, index) =>
           response.data.map((category) => normalizeCategory(category, rootCategories[index].id))
         );
-        
+
         const courseResponse = await api.get('/courses');
         const liveCategories = [...rootCategories, ...childCategories];
         const liveCourses = courseResponse.data.map(normalizeCourse);
@@ -43,11 +44,11 @@ export default function LandingPage() {
       } catch (err) {
         console.warn('Failed to load live catalog from Spring Boot. Reverting to sample data.', err);
         if (isMounted) {
-          setCatalogState({ 
-            categories: defaultCategories, 
-            courses: defaultCourses, 
-            loading: false, 
-            source: 'sample' 
+          setCatalogState({
+            categories: defaultCategories,
+            courses: defaultCourses,
+            loading: false,
+            source: 'sample',
           });
         }
       }
@@ -60,65 +61,43 @@ export default function LandingPage() {
   }, []);
 
   const topCourses = catalogState.courses.slice(0, 3);
+  const rootCategories = catalogState.categories.filter((category) => !category.parentId);
 
   return (
-    <div style={{ fontFamily: 'var(--font-sans)', animation: 'slideIn var(--transition-normal) forwards' }}>
-      <GlassHeroPreview />
+    <div className="font-sans">
+      <Hero />
 
-      {/* Categories Grid Section */}
-      <section style={{ padding: '72px max(24px, calc((100vw - 1200px) / 2))' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
+      {/* Categories */}
+      <section className="mx-auto max-w-6xl px-6 py-20">
+        <div className="mb-8 flex items-end justify-between gap-4">
           <div>
-            <p style={{ margin: '0 0 6px', color: 'var(--primary)', fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Explore by focus</p>
-            <h2 style={{ fontSize: '2rem', fontWeight: '800', fontFamily: 'var(--font-display)' }}>Available Categories</h2>
+            <p className="mb-2 font-mono text-xs font-medium uppercase tracking-wider text-primary">
+              تصفّح حسب المجال
+            </p>
+            <h2 className="font-display text-2xl font-semibold text-foreground">التصنيفات المتاحة</h2>
           </div>
-          {catalogState.source === 'sample' && (
-            <span className="data-source">Sample data</span>
-          )}
+          {catalogState.source === 'sample' && <Badge variant="outline">بيانات تجريبية</Badge>}
         </div>
 
-        <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-          {catalogState.categories
-            .filter((category) => !category.parentId)
-            .map((category) => (
-              <Link 
-                className="premium-card" 
-                key={category.id} 
-                to={`/catalog?category=${category.id}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '24px',
-                  minHeight: '100px'
-                }}
-              >
-                <div>
-                  <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', marginBottom: '4px' }}>{category.name}</h3>
-                  <small style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>
-                    {catalogState.courses.filter((course) => categoryMatches(course, category.id, catalogState.categories)).length} courses
-                  </small>
-                </div>
-                <span style={{ fontSize: '1.3rem', color: 'var(--primary)' }}>&rarr;</span>
-              </Link>
-            ))}
-        </div>
+        <CategoryList categories={rootCategories} courses={catalogState.courses} />
       </section>
 
-      {/* Top Courses Section */}
-      <section 
-        style={{ 
-          padding: '72px max(24px, calc((100vw - 1200px) / 2))',
-          backgroundColor: 'var(--surface)',
-          borderTop: '1px solid var(--border)',
-          borderBottom: '1px solid var(--border)'
-        }}
-      >
-        <div style={{ marginBottom: '32px' }}>
-          <p style={{ margin: '0 0 6px', color: 'var(--primary)', fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Popular paths</p>
-          <h2 style={{ fontSize: '2rem', fontWeight: '800', fontFamily: 'var(--font-display)' }}>Top Courses</h2>
+      {/* Top courses */}
+      <section className="border-y border-border bg-surface">
+        <div className="mx-auto max-w-6xl px-6 py-20">
+          <div className="mb-8">
+            <p className="mb-2 font-mono text-xs font-medium uppercase tracking-wider text-primary">
+              الأكثر متابعة
+            </p>
+            <h2 className="font-display text-2xl font-semibold text-foreground">كورسات مميزة</h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {topCourses.map((course) => (
+              <CourseCard key={course.id} course={course} />
+            ))}
+          </div>
         </div>
-        <CourseGrid coursesToShow={topCourses} />
       </section>
     </div>
   );

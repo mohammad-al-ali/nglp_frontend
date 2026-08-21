@@ -3,11 +3,13 @@ import api, { getCurrentUserId } from '../../services/api';
 import PageFrame from '../../components/ui/PageFrame';
 import TextField from '../../components/ui/TextField';
 import ProgressBar from '../../components/ui/ProgressBar';
+import ImagePicker from '../../components/ui/ImagePicker';
 import { categories as defaultCategories, normalizeCategory, normalizeCourse } from '../../utils/constants';
 
 export default function CourseBuilder() {
   const [categories, setCategories] = useState(defaultCategories);
   const [courseInfo, setCourseInfo] = useState({ title: '', description: '', categoryId: 4 });
+  const [courseImageFile, setCourseImageFile] = useState(null);
   const [savedCourse, setSavedCourse] = useState(null);
   const [courseStatus, setCourseStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'missing title' | 'offline draft'
   const [lessonTitle, setLessonTitle] = useState('');
@@ -80,20 +82,25 @@ export default function CourseBuilder() {
     const title = lessonTitle.trim() || file.name.replace(/\.mp4$/i, '');
     const description = lessonDescription.trim();
     
-    const newQueueItem = { 
-      id: queueId, 
-      title, 
+    const newQueueItem = {
+      id: queueId,
+      title,
       description,
-      fileName: file.name, 
+      fileName: file.name,
       file: file, // Keep raw binary File reference
-      progress: 0, 
+      imageFile: null, // صورة مصغرة اختيارية للدرس
+      progress: 0,
       status: 'pending', // 'pending' | 'uploading' | 'processing' | 'completed' | 'error'
-      transcript: null 
+      transcript: null
     };
-    
+
     setQueue((current) => [...current, newQueueItem]);
     setLessonTitle('');
     setLessonDescription('');
+  }
+
+  function setQueueItemImage(itemId, imageFile) {
+    setQueue((current) => current.map((item) => (item.id === itemId ? { ...item, imageFile } : item)));
   }
 
   // Simulated offline/sandbox helper for safe uploads
@@ -159,7 +166,20 @@ export default function CourseBuilder() {
       });
       
       currentCourseId = response.data?.id;
-      finalCourseObj = normalizeCourse(response.data);
+      let savedCourseData = response.data;
+
+      if (courseImageFile && currentCourseId) {
+        const courseImageForm = new FormData();
+        courseImageForm.append('image', courseImageFile);
+        try {
+          const imageResponse = await api.post(`/courses/${currentCourseId}/image`, courseImageForm);
+          savedCourseData = imageResponse.data;
+        } catch (imageErr) {
+          console.warn('Failed to upload course cover image.', imageErr);
+        }
+      }
+
+      finalCourseObj = normalizeCourse(savedCourseData);
       setSavedCourse(finalCourseObj);
       setCourseStatus('saved');
     } catch (err) {
@@ -197,6 +217,9 @@ export default function CourseBuilder() {
         )
       );
       formData.append('file', item.file);
+      if (item.imageFile) {
+        formData.append('image', item.imageFile);
+      }
 
       try {
         await api.post(`/lessons/${currentCourseId}`, formData, {
@@ -359,6 +382,12 @@ export default function CourseBuilder() {
               ))}
             </select>
           </div>
+
+          <ImagePicker
+            label="صورة غلاف الكورس (اختياري)"
+            hint="تظهر في بطاقة الكورس بصفحة الفهرس والكتالوج."
+            onChange={setCourseImageFile}
+          />
         </section>
 
         {/* Pane 2: Lesson Upload Area */}
@@ -575,6 +604,14 @@ export default function CourseBuilder() {
                           {displayStatusText}
                         </span>
                       </div>
+
+                      {/* Optional per-lesson thumbnail, only editable before upload starts */}
+                      {isPending && (
+                        <ImagePicker
+                          label="صورة مصغرة للدرس (اختياري)"
+                          onChange={(file) => setQueueItemImage(item.id, file)}
+                        />
+                      )}
 
                       {/* Display Progress Bar */}
                       {!isCompleted && !isPending && (

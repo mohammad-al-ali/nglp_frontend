@@ -1,5 +1,6 @@
 import { NavLink, Link } from 'react-router-dom';
 import { getStoredUser } from '../services/api';
+import { resolveMediaUrl } from '../utils/constants';
 
 export default function Sidebar() {
   const user = getStoredUser();
@@ -223,12 +224,12 @@ export default function Sidebar() {
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface)'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              <div 
-                style={{ 
-                  width: '40px', 
-                  height: '40px', 
-                  borderRadius: '50%', 
-                  backgroundColor: 'var(--primary-soft)', 
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--primary-soft)',
                   border: '1px solid var(--primary-border)',
                   display: 'flex',
                   alignItems: 'center',
@@ -236,10 +237,19 @@ export default function Sidebar() {
                   fontSize: '1rem',
                   fontWeight: '800',
                   color: 'var(--primary)',
-                  flexShrink: 0
+                  flexShrink: 0,
+                  overflow: 'hidden'
                 }}
               >
-                {user.fullName ? user.fullName.charAt(0) : 'U'}
+                {user.avatarUrl ? (
+                  <img
+                    src={resolveMediaUrl(user.avatarUrl)}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  user.fullName ? user.fullName.charAt(0) : 'U'
+                )}
               </div>
               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block' }}>

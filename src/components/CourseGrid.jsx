@@ -14,19 +14,33 @@ export default function CourseGrid({ coursesToShow = [] }) {
       }}
     >
       {coursesToShow.map((course) => (
-        <article 
-          className="premium-card" 
+        <article
+          className="premium-card"
           key={course.id}
           style={{
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
             gap: '18px',
-            padding: '24px',
+            padding: course.imageUrl ? '0 24px 24px' : '24px',
             minHeight: '310px',
-            fontFamily: 'var(--font-sans)'
+            fontFamily: 'var(--font-sans)',
+            overflow: 'hidden'
           }}
         >
+          {course.imageUrl && (
+            <img
+              src={course.imageUrl}
+              alt=""
+              style={{
+                width: 'calc(100% + 48px)',
+                margin: '0 -24px',
+                height: '140px',
+                objectFit: 'cover',
+                display: 'block'
+              }}
+            />
+          )}
           <div>
             <div 
               style={{ 

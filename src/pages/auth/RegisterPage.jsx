@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api, { saveStoredUser } from '../../services/api';
 import TextField from '../../components/ui/TextField';
+import ImagePicker from '../../components/ui/ImagePicker';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -10,9 +11,10 @@ export default function RegisterPage() {
     fullName: '', 
     email: '', 
     password: '', 
-    confirmPassword: '', 
-    roleId: '' 
+    confirmPassword: '',
+    roleId: ''
   });
+  const [avatarFile, setAvatarFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle'); // idle, submitting, offline
 
@@ -76,7 +78,18 @@ export default function RegisterPage() {
       });
       const user = response.data.user || response.data;
       saveStoredUser(user);
-      
+
+      if (avatarFile && user?.id) {
+        const formData = new FormData();
+        formData.append('image', avatarFile);
+        try {
+          const avatarResponse = await api.post(`/users/${user.id}/image`, formData);
+          saveStoredUser(avatarResponse.data);
+        } catch (avatarErr) {
+          console.warn('Failed to upload avatar.', avatarErr);
+        }
+      }
+
       const roleId = user?.role?.id ?? Number(form.roleId);
       if (roleId === 3) {
         navigate('/teacher');
@@ -203,7 +216,13 @@ export default function RegisterPage() {
               )}
             </select>
           </div>
-          
+
+          <ImagePicker
+            label="Profile photo (optional)"
+            hint="Shown next to your name in the sidebar."
+            onChange={setAvatarFile}
+          />
+
           {status === 'offline' && (
             <p style={{ color: 'var(--warning)', fontSize: '0.85rem', fontWeight: '600' }}>
               Backend offline, continuing in local mock mode.

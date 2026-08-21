@@ -1,50 +1,74 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=El+Messiri:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-raised: #f3f4f6;
+  --color-foreground: #111827;
+  --color-muted-foreground: #4b5563;
+  --color-border: #e5e7eb;
+  --color-border-hover: #d1d5db;
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-foreground: #ffffff;
+  --color-primary-soft: #eef2ff;
+  --color-primary-border: #c7d2fe;
+  --font-sans: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: 'El Messiri', 'IBM Plex Sans Arabic', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'IBM Plex Sans Arabic', monospace;
+
+  /* Soft, highly diffused elevation — cards should feel like they float, never a hard drop shadow */
+  --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-soft-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+}
 
 :root {
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-display: 'Outfit', sans-serif;
-  
-  /* Modern Slate & Royal Blue Light Palette */
+  --font-sans: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: 'El Messiri', 'IBM Plex Sans Arabic', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'IBM Plex Sans Arabic', monospace;
+
+  /* Light-mode-only neutral scale (gray) + single indigo accent */
   --bg: #f8fafc;
   --surface: #ffffff;
-  --surface-raised: #f1f5f9;
-  --surface-hover: #f8fafc;
-  
-  --text-main: #0f172a;
-  --text-muted: #64748b;
+  --surface-raised: #f3f4f6;
+  --surface-hover: #f3f4f6;
+
+  --text-main: #111827;
+  --text-muted: #4b5563;
   --text-inverse: #ffffff;
-  
-  --border: #e2e8f0;
-  --border-focus: #3b82f6;
-  --border-hover: #cbd5e1;
-  
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-soft: #eff6ff;
-  --primary-border: #bfdbfe;
-  
-  --success: #10b981;
-  --success-soft: #ecfdf5;
-  --success-border: #a7f3d0;
-  
-  --warning: #f59e0b;
+
+  --border: #e5e7eb;
+  --border-focus: #4f46e5;
+  --border-hover: #d1d5db;
+
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-soft: #eef2ff;
+  --primary-border: #c7d2fe;
+
+  --success: #16a34a;
+  --success-soft: #f0fdf4;
+  --success-border: #bbf7d0;
+
+  --warning: #d97706;
   --warning-soft: #fffbeb;
   --warning-border: #fde68a;
-  
-  --error: #ef4444;
+
+  --error: #dc2626;
   --error-soft: #fef2f2;
   --error-border: #fecaca;
 
   /* Enhanced Glass - quiz pages (higher opacity for readability) */
-  --glass-bg-enhanced: rgba(255, 255, 255, 0.78);
-  --glass-blur-enhanced: 20px;
-  --glass-border-enhanced: rgba(255, 255, 255, 0.55);
-  --glass-shadow-enhanced: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --glass-bg-enhanced: rgba(255, 255, 255, 0.9);
+  --glass-blur-enhanced: 16px;
+  --glass-border-enhanced: #e4e4e7;
+  --glass-shadow-enhanced: 0 4px 20px rgba(24, 24, 27, 0.06);
 
   /* Quiz-specific tokens */
-  --quiz-text-secondary: #475569;
-  --quiz-progress-track: #e2e8f0;
-  --quiz-progress-fill: #2563eb;
+  --quiz-text-secondary: #52525b;
+  --quiz-progress-track: #e4e4e7;
+  --quiz-progress-fill: #5457e5;
   --quiz-correct-bg: #f0fdf4;
   --quiz-correct-border: #86efac;
   --quiz-correct-text: #15803d;
@@ -52,96 +76,96 @@
   --quiz-incorrect-border: #fca5a5;
   --quiz-incorrect-text: #b91c1c;
   --quiz-hero-bg: #ffffff;
-  --quiz-highlight: #1e40af;
+  --quiz-highlight: #4345c4;
 
-  /* Glassmorphism Core Tokens */
-  --glass-bg: rgba(255, 255, 255, 0.35);
-  --glass-blur: 16px;
-  --glass-border: rgba(255, 255, 255, 0.45);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12);
-  --glass-shadow-hover: 0 12px 40px 0 rgba(0, 0, 0, 0.18);
-  --glass-input-bg: rgba(255, 255, 255, 0.7);
+  /* Glassmorphism Core Tokens (kept for legacy pages; neutralized) */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-blur: 12px;
+  --glass-border: #e4e4e7;
+  --glass-shadow: 0 1px 2px rgba(24, 24, 27, 0.04);
+  --glass-shadow-hover: 0 4px 12px rgba(24, 24, 27, 0.08);
+  --glass-input-bg: rgba(255, 255, 255, 0.9);
 
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.03), 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
-  --shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
-  --shadow-premium: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
-  
+  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04);
+  --shadow-md: 0 2px 8px rgba(24, 24, 27, 0.06);
+  --shadow-lg: 0 8px 24px rgba(24, 24, 27, 0.08);
+  --shadow-premium: 0 8px 24px rgba(24, 24, 27, 0.08);
+
   /* Radius */
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-full: 9999px;
-  
+
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
-  
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
   /* Navigation & Layout dimensions */
   --header-height: 70px;
 }
 
-/* Global Reset & Base */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* Global Reset & Base (layered so Tailwind utilities can still override) */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-html, body, #root {
-  min-height: 100vh;
-  background:
-    linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)),
-    url('/bg.jpg') center / cover no-repeat fixed;
-  color: var(--text-main);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+  html, body, #root {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-body {
-  overflow-x: hidden;
-}
+  body {
+    overflow-x: hidden;
+  }
 
-/* Custom Scrollbar Styles for IDE experience */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+  /* Custom Scrollbar Styles for IDE experience */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: var(--radius-full);
-  border: 2px solid transparent;
-}
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: var(--radius-full);
+    border: 2px solid transparent;
+  }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
 
-/* Premium Typography */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  color: var(--text-main);
-  letter-spacing: -0.02em;
-}
+  /* Premium Typography */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+  }
 
-p {
-  line-height: 1.6;
-  color: var(--text-muted);
-}
+  p {
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
-  transition: color var(--transition-fast);
+  a {
+    color: inherit;
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
 }
 
 /* Animations */
@@ -193,7 +217,7 @@ a {
 .premium-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--glass-shadow-hover);
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: var(--border-hover);
 }
 
 /* Glassmorphism utility (legacy support) */

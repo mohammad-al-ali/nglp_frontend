@@ -191,6 +191,7 @@ export function normalizeCategory(category, parentId = null) {
     id: category.id,
     name: category.name,
     parentId,
+    imageUrl: resolveMediaUrl(category.imageUrl) || null,
   };
 }
 
@@ -205,6 +206,7 @@ export function normalizeCourse(course) {
     students: course.studentsCount || (course.students ? (typeof course.students === 'number' ? course.students : course.students.length) : 0),
     lessonsCount: course.lessonsCount || course.lessons?.length || 0,
     description: course.description || 'لا يوجد وصف تفصيلي متوفر حالياً لهذا الكورس.',
+    imageUrl: resolveMediaUrl(course.imageUrl) || null,
   };
 }
 
@@ -217,6 +219,7 @@ export function normalizeLesson(lesson) {
     description: lesson.description || 'تفاصيل الدرس التعليمي ستظهر هنا قريباً.',
     transcript: lesson.transcript || 'التفريغ النصي للفيديو سيظهر هنا بعد انتهاء عملية المعالجة.',
     videoUrl: lesson.videoUrl || '',
+    imageUrl: resolveMediaUrl(lesson.imageUrl) || null,
   };
 }
 
