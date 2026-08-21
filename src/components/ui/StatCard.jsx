@@ -1,27 +1,10 @@
+import { Card } from '@/components/ui/card';
 
-/**
- * Premium dashboard metric card
- */
 export default function StatCard({ label, value }) {
   return (
-    <div 
-      className="premium-card"
-      style={{ 
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '6px',
-        padding: '24px',
-        fontFamily: 'var(--font-sans)',
-        minHeight: '110px',
-        justifyContent: 'center'
-      }}
-    >
-      <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        {label}
-      </span>
-      <strong style={{ fontSize: '2.4rem', fontWeight: '800', color: 'var(--text-main)', fontFamily: 'var(--font-display)', lineHeight: '1.1' }}>
-        {value}
-      </strong>
-    </div>
+    <Card className="flex min-h-28 flex-col justify-center gap-1.5 p-6">
+      <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+      <strong className="font-display text-4xl font-semibold leading-tight text-foreground">{value}</strong>
+    </Card>
   );
 }

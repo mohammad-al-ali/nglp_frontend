@@ -3,7 +3,7 @@ import api from '../services/api';
 import { categories as defaultCategories, courses as defaultCourses, normalizeCategory, normalizeCourse } from '../utils/constants';
 import Hero from '@/components/home/Hero';
 import CategoryList from '@/components/home/CategoryList';
-import CourseCard from '@/components/home/CourseCard';
+import CourseCard from '@/components/CourseCard';
 import { Badge } from '@/components/ui/badge';
 
 export default function LandingPage() {
