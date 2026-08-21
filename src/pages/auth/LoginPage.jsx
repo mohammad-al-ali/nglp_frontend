@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api, { saveStoredUser } from '../../services/api';
-import TextField from '../../components/ui/TextField';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import FormField from '@/components/ui/form-field';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -12,10 +15,10 @@ export default function LoginPage() {
   function validate() {
     const nextErrors = {};
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      nextErrors.email = 'Enter a valid email address.';
+      nextErrors.email = 'أدخل بريداً إلكترونياً صحيحاً.';
     }
     if (form.password.length < 6) {
-      nextErrors.password = 'Password must be at least 6 characters.';
+      nextErrors.password = 'يجب أن تكون كلمة المرور 6 أحرف على الأقل.';
     }
     return nextErrors;
   }
@@ -30,25 +33,20 @@ export default function LoginPage() {
     try {
       const response = await api.post('/auth/login', form);
       const user = response.data.user || response.data;
-      
-      // Ensure we save the user session
       saveStoredUser(user);
-      
-      // Extract role name to handle redirects
+
       const roleName = user.role?.name || user.role || '';
-      const roleId = user.role?.id ?? null;
-      
-      if (/ADMIN/i.test(roleName) || roleId === 1) {
+      if (/ADMIN/i.test(roleName)) {
         navigate('/admin/categories');
-      } else if (/TEACHER/i.test(roleName) || roleId === 3) {
+      } else if (/TEACHER/i.test(roleName)) {
         navigate('/teacher');
       } else {
         navigate('/dashboard');
       }
     } catch (err) {
       console.error('Login error:', err);
-      setErrors({ 
-        password: 'Invalid email or password, or the backend service is currently offline.' 
+      setErrors({
+        password: 'البريد الإلكتروني أو كلمة المرور غير صحيحة، أو أن الخادم غير متاح حالياً.',
       });
     } finally {
       setIsSubmitting(false);
@@ -56,88 +54,51 @@ export default function LoginPage() {
   }
 
   return (
-    <div 
-      style={{ 
-        display: 'grid', 
-        minHeight: 'calc(100vh - var(--header-height))', 
-        placeItems: 'center', 
-        padding: '40px 24px',
-        fontFamily: 'var(--font-sans)',
-        animation: 'slideIn var(--transition-normal) forwards'
-      }}
-    >
-      <div 
-        className="premium-card"
-        style={{
-          width: '100%',
-          maxWidth: '480px',
-          padding: '40px',
-          borderRadius: 'var(--radius-lg)'
-        }}
-      >
-        <p style={{ margin: '0 0 6px', color: 'var(--primary)', fontSize: '0.78rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          Account access
+    <div className="flex min-h-screen items-center justify-center px-6 py-10">
+      <Card className="w-full max-w-md p-10">
+        <p className="mb-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-primary">
+          الدخول إلى الحساب
         </p>
-        <h1 style={{ fontSize: '2rem', fontWeight: '800', fontFamily: 'var(--font-display)', color: 'var(--text-main)', marginBottom: '8px' }}>
-          Welcome back
-        </h1>
-        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '32px' }}>
-          Sign in to continue your courses and AI tutor sessions.
+        <h1 className="font-display text-3xl font-semibold text-foreground">مرحباً بعودتك</h1>
+        <p className="mb-8 mt-2 text-sm text-muted-foreground">
+          سجّل الدخول لمتابعة كورساتك وجلسات المساعد الذكي.
         </p>
-        
-        <form onSubmit={submitForm} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} noValidate>
-          <TextField 
-            label="Email Address" 
-            type="email" 
-            value={form.email} 
-            error={errors.email} 
-            onChange={(email) => setForm({ ...form, email })} 
-            placeholder="name@example.com"
-          />
-          
-          <TextField 
-            label="Password" 
-            type="password" 
-            value={form.password} 
-            error={errors.password} 
-            onChange={(password) => setForm({ ...form, password })} 
-            placeholder="••••••••"
-          />
-          
-          <button 
-            type="submit" 
-            disabled={isSubmitting}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '100%',
-              minHeight: '44px',
-              backgroundColor: 'var(--primary)',
-              color: 'var(--text-inverse)',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: '700',
-              fontSize: '0.95rem',
-              cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              opacity: isSubmitting ? 0.7 : 1,
-              transition: 'all var(--transition-fast)',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)'
-            }}
-            onMouseEnter={(e) => { if(!isSubmitting) e.target.style.backgroundColor = 'var(--primary-hover)'; }}
-            onMouseLeave={(e) => { if(!isSubmitting) e.target.style.backgroundColor = 'var(--primary)'; }}
-          >
-            {isSubmitting ? 'Signing in...' : 'Sign In'}
-          </button>
+
+        <form onSubmit={submitForm} className="flex flex-col gap-5" noValidate>
+          <FormField label="البريد الإلكتروني" error={errors.email} htmlFor="login-email">
+            <Input
+              id="login-email"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="name@example.com"
+              aria-invalid={Boolean(errors.email)}
+            />
+          </FormField>
+
+          <FormField label="كلمة المرور" error={errors.password} htmlFor="login-password">
+            <Input
+              id="login-password"
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              placeholder="••••••••"
+              aria-invalid={Boolean(errors.password)}
+            />
+          </FormField>
+
+          <Button type="submit" disabled={isSubmitting} className="mt-2">
+            {isSubmitting ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
+          </Button>
         </form>
-        
-        <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          Don't have an account?{' '}
-          <Link to="/register" style={{ color: 'var(--primary)', fontWeight: '600' }}>
-            Register here
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          ليس لديك حساب؟{' '}
+          <Link to="/register" className="font-medium text-primary transition-colors duration-200 ease-in-out hover:text-primary-hover">
+            إنشاء حساب جديد
           </Link>
-        </div>
-      </div>
+        </p>
+      </Card>
     </div>
   );
 }

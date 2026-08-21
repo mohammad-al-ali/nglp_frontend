@@ -1,22 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api, { saveStoredUser } from '../../services/api';
-import TextField from '../../components/ui/TextField';
-import ImagePicker from '../../components/ui/ImagePicker';
+import { isTeacher } from '@/lib/roles';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import FormField from '@/components/ui/form-field';
+import ImagePicker from '@/components/ui/ImagePicker';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [roles, setRoles] = useState([]);
-  const [form, setForm] = useState({ 
-    fullName: '', 
-    email: '', 
-    password: '', 
+  const [form, setForm] = useState({
+    fullName: '',
+    email: '',
+    password: '',
     confirmPassword: '',
-    roleId: ''
+    roleId: '',
   });
   const [avatarFile, setAvatarFile] = useState(null);
   const [errors, setErrors] = useState({});
-  const [status, setStatus] = useState('idle'); // idle, submitting, offline
+  const [status, setStatus] = useState('idle'); // idle | submitting | error
 
   useEffect(() => {
     let isMounted = true;
@@ -24,9 +30,7 @@ export default function RegisterPage() {
     async function loadRoles() {
       try {
         const response = await api.get('/roles');
-        const studentTeacherRoles = response.data.filter((role) => 
-          /STUDENT|TEACHER/i.test(role.name)
-        );
+        const studentTeacherRoles = response.data.filter((role) => /STUDENT|TEACHER/i.test(role.name));
         if (isMounted) {
           setRoles(studentTeacherRoles);
           if (studentTeacherRoles.length > 0) {
@@ -34,10 +38,8 @@ export default function RegisterPage() {
           }
         }
       } catch (err) {
-        console.warn('Failed to load user roles from backend. Reverting to local defaults.', err);
-        if (isMounted) {
-          setRoles([]);
-        }
+        console.warn('Failed to load user roles from backend.', err);
+        if (isMounted) setRoles([]);
       }
     }
 
@@ -49,15 +51,15 @@ export default function RegisterPage() {
 
   function validate() {
     const nextErrors = {};
-    if (!form.fullName.trim()) nextErrors.fullName = 'Name is required.';
+    if (!form.fullName.trim()) nextErrors.fullName = 'الاسم مطلوب.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      nextErrors.email = 'Enter a valid email address.';
+      nextErrors.email = 'أدخل بريداً إلكترونياً صحيحاً.';
     }
     if (form.password.length < 6) {
-      nextErrors.password = 'Password must be at least 6 characters.';
+      nextErrors.password = 'يجب أن تكون كلمة المرور 6 أحرف على الأقل.';
     }
     if (form.password !== form.confirmPassword) {
-      nextErrors.confirmPassword = 'Passwords must match.';
+      nextErrors.confirmPassword = 'كلمتا المرور غير متطابقتين.';
     }
     return nextErrors;
   }
@@ -90,179 +92,111 @@ export default function RegisterPage() {
         }
       }
 
-      const roleId = user?.role?.id ?? Number(form.roleId);
-      if (roleId === 3) {
-        navigate('/teacher');
-      } else {
-        navigate('/dashboard');
-      }
+      navigate(isTeacher(user) ? '/teacher' : '/dashboard');
     } catch (err) {
-      console.error('Registration failed. Entering offline/fallback mode.', err);
-      setStatus('offline');
-      // If offline, let them proceed in demo mode
-      const mockUser = {
-        id: 1,
-        fullName: form.fullName || 'Demo Student',
-        email: form.email,
-        role: form.roleId === '3' ? { id: 3, name: 'ROLE_TEACHER' } : { id: 2, name: 'ROLE_STUDENT' }
-      };
-      saveStoredUser(mockUser);
-      if (mockUser.role.id === 3) {
-        navigate('/teacher');
-      } else {
-        navigate('/dashboard');
-      }
+      console.error('Registration failed.', err);
+      setStatus('error');
     }
   }
 
   return (
-    <div 
-      style={{ 
-        display: 'grid', 
-        minHeight: 'calc(100vh - var(--header-height))', 
-        placeItems: 'center', 
-        padding: '40px 24px',
-        fontFamily: 'var(--font-sans)',
-        animation: 'slideIn var(--transition-normal) forwards'
-      }}
-    >
-      <div 
-        className="premium-card"
-        style={{
-          width: '100%',
-          maxWidth: '520px',
-          padding: '40px',
-          borderRadius: 'var(--radius-lg)'
-        }}
-      >
-        <p style={{ margin: '0 0 6px', color: 'var(--primary)', fontSize: '0.78rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          Account access
+    <div className="flex min-h-screen items-center justify-center px-6 py-10">
+      <Card className="w-full max-w-lg p-10">
+        <p className="mb-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-primary">إنشاء حساب</p>
+        <h1 className="font-display text-3xl font-semibold text-foreground">حساب جديد</h1>
+        <p className="mb-8 mt-2 text-sm text-muted-foreground">
+          سجّل كطالب أو معلّم وابدأ مسارك التعليمي.
         </p>
-        <h1 style={{ fontSize: '2rem', fontWeight: '800', fontFamily: 'var(--font-display)', color: 'var(--text-main)', marginBottom: '8px' }}>
-          Create your account
-        </h1>
-        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '32px' }}>
-          Register as a student or teacher and start building a learning path.
-        </p>
-        
-        <form onSubmit={submitForm} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} noValidate>
-          <TextField 
-            label="Full Name" 
-            value={form.fullName} 
-            error={errors.fullName} 
-            onChange={(fullName) => setForm({ ...form, fullName })} 
-            placeholder="John Doe"
-          />
-          
-          <TextField 
-            label="Email Address" 
-            type="email" 
-            value={form.email} 
-            error={errors.email} 
-            onChange={(email) => setForm({ ...form, email })} 
-            placeholder="name@example.com"
-          />
-          
-          <TextField 
-            label="Password" 
-            type="password" 
-            value={form.password} 
-            error={errors.password} 
-            onChange={(password) => setForm({ ...form, password })} 
-            placeholder="•••••••• (Min. 6 chars)"
-          />
-          
-          <TextField 
-            label="Confirm Password" 
-            type="password" 
-            value={form.confirmPassword} 
-            error={errors.confirmPassword} 
-            onChange={(confirmPassword) => setForm({ ...form, confirmPassword })} 
-            placeholder="••••••••"
-          />
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ color: 'var(--text-main)', fontSize: '0.875rem', fontWeight: '600' }}>
-              Account Role
-            </label>
-            <select 
-              value={form.roleId} 
-              onChange={(event) => setForm({ ...form, roleId: event.target.value })}
-              style={{
-                width: '100%',
-                minHeight: '44px',
-                padding: '0 12px',
-                fontSize: '0.95rem',
-                color: 'var(--text-main)',
-                backgroundColor: 'var(--glass-input-bg)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-md)',
-                outline: 'none',
-                boxShadow: 'var(--shadow-sm)',
-                cursor: 'pointer'
-              }}
+
+        <form onSubmit={submitForm} className="flex flex-col gap-5" noValidate>
+          <FormField label="الاسم الكامل" error={errors.fullName} htmlFor="reg-name">
+            <Input
+              id="reg-name"
+              value={form.fullName}
+              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+              placeholder="محمد أحمد"
+              aria-invalid={Boolean(errors.fullName)}
+            />
+          </FormField>
+
+          <FormField label="البريد الإلكتروني" error={errors.email} htmlFor="reg-email">
+            <Input
+              id="reg-email"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="name@example.com"
+              aria-invalid={Boolean(errors.email)}
+            />
+          </FormField>
+
+          <FormField label="كلمة المرور" error={errors.password} htmlFor="reg-password" hint={!errors.password ? '6 أحرف على الأقل' : undefined}>
+            <Input
+              id="reg-password"
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              placeholder="••••••••"
+              aria-invalid={Boolean(errors.password)}
+            />
+          </FormField>
+
+          <FormField label="تأكيد كلمة المرور" error={errors.confirmPassword} htmlFor="reg-confirm">
+            <Input
+              id="reg-confirm"
+              type="password"
+              value={form.confirmPassword}
+              onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+              placeholder="••••••••"
+              aria-invalid={Boolean(errors.confirmPassword)}
+            />
+          </FormField>
+
+          <FormField label="نوع الحساب" htmlFor="reg-role">
+            <Select
+              id="reg-role"
+              value={form.roleId}
+              onChange={(e) => setForm({ ...form, roleId: e.target.value })}
             >
               {roles.length > 0 ? (
                 roles.map((role) => (
                   <option key={role.id} value={role.id}>
-                    {role.name.replace('ROLE_', '') === 'TEACHER' ? 'Teacher' : 'Student'}
+                    {/TEACHER/i.test(role.name) ? 'معلّم' : 'طالب'}
                   </option>
                 ))
               ) : (
                 <>
-                  <option value="2">Student</option>
-                  <option value="3">Teacher</option>
+                  <option value="1">طالب</option>
+                  <option value="2">معلّم</option>
                 </>
               )}
-            </select>
-          </div>
+            </Select>
+          </FormField>
 
           <ImagePicker
-            label="Profile photo (optional)"
-            hint="Shown next to your name in the sidebar."
+            label="صورة شخصية (اختياري)"
+            hint="تظهر بجانب اسمك في القائمة الجانبية."
             onChange={setAvatarFile}
           />
 
-          {status === 'offline' && (
-            <p style={{ color: 'var(--warning)', fontSize: '0.85rem', fontWeight: '600' }}>
-              Backend offline, continuing in local mock mode.
-            </p>
+          {status === 'error' && (
+            <Alert variant="destructive">
+              <AlertDescription>تعذّر إنشاء الحساب. تحقق من البيانات المدخلة أو حاول مرة أخرى لاحقاً.</AlertDescription>
+            </Alert>
           )}
-          
-          <button 
-            type="submit" 
-            disabled={status === 'submitting'}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '100%',
-              minHeight: '44px',
-              backgroundColor: 'var(--primary)',
-              color: 'var(--text-inverse)',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: '700',
-              fontSize: '0.95rem',
-              cursor: status === 'submitting' ? 'not-allowed' : 'pointer',
-              opacity: status === 'submitting' ? 0.7 : 1,
-              transition: 'all var(--transition-fast)',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)'
-            }}
-            onMouseEnter={(e) => { if(status !== 'submitting') e.target.style.backgroundColor = 'var(--primary-hover)'; }}
-            onMouseLeave={(e) => { if(status !== 'submitting') e.target.style.backgroundColor = 'var(--primary)'; }}
-          >
-            {status === 'submitting' ? 'Registering...' : 'Register'}
-          </button>
+
+          <Button type="submit" disabled={status === 'submitting'} className="mt-2">
+            {status === 'submitting' ? 'جاري إنشاء الحساب...' : 'إنشاء حساب'}
+          </Button>
         </form>
-        
-        <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          Already have an account?{' '}
-          <Link to="/login" style={{ color: 'var(--primary)', fontWeight: '600' }}>
-            Login here
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          لديك حساب بالفعل؟{' '}
+          <Link to="/login" className="font-medium text-primary transition-colors duration-200 ease-in-out hover:text-primary-hover">
+            تسجيل الدخول
           </Link>
-        </div>
-      </div>
+        </p>
+      </Card>
     </div>
   );
 }

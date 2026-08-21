@@ -1,7 +1,12 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api, { getStoredUser, saveStoredUser, getCurrentUserId } from '../services/api';
-import PageFrame from '../components/ui/PageFrame';
-import TextField from '../components/ui/TextField';
+import PageShell from '@/components/ui/page-shell';
+import PageHeader from '@/components/ui/page-header';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import FormField from '@/components/ui/form-field';
 
 export default function ProfilePage() {
   const storedUser = getStoredUser();
@@ -10,8 +15,7 @@ export default function ProfilePage() {
     email: storedUser?.email || '',
     password: '',
   });
-  const [saved, setSaved] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [status, setStatus] = useState('idle'); // idle | saving | saved | error
 
   useEffect(() => {
     let isMounted = true;
@@ -32,8 +36,7 @@ export default function ProfilePage() {
 
   async function submitForm(event) {
     event.preventDefault();
-    setSaved(false);
-    setIsSaving(true);
+    setStatus('saving');
     try {
       const response = await api.put('/users/' + getCurrentUserId(), {
         fullName: form.fullName,
@@ -41,89 +44,65 @@ export default function ProfilePage() {
         password: form.password,
       });
       saveStoredUser(response.data);
-      setSaved(true);
+      setStatus('saved');
     } catch (err) {
-      console.warn('Update profile API request failed. Reverting to local update.', err);
-      const updatedUser = {
-        ...storedUser,
-        fullName: form.fullName,
-        email: form.email,
-      };
-      saveStoredUser(updatedUser);
-      setSaved(true);
-    } finally {
-      setIsSaving(false);
+      console.warn('Update profile API request failed.', err);
+      setStatus('error');
     }
   }
 
   return (
-    <PageFrame eyebrow="Account Settings" title="Profile">
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <form
-          onSubmit={submitForm}
-          className="premium-card"
-          style={{
-            width: '100%',
-            maxWidth: '540px',
-            padding: '36px',
-            borderRadius: 'var(--radius-lg)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px',
-          }}
-        >
-          <TextField
-            label="Name"
-            value={form.fullName}
-            onChange={(fullName) => setForm({ ...form, fullName })}
-            placeholder="John Doe"
-          />
+    <PageShell>
+      <PageHeader eyebrow="إعدادات الحساب" title="الملف الشخصي" />
+      <div className="flex justify-center">
+        <Card className="w-full max-w-lg p-9">
+          <form onSubmit={submitForm} className="flex flex-col gap-5">
+            <FormField label="الاسم الكامل" htmlFor="profile-name">
+              <Input
+                id="profile-name"
+                value={form.fullName}
+                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                placeholder="محمد أحمد"
+              />
+            </FormField>
 
-          <TextField
-            label="Email Address"
-            type="email"
-            value={form.email}
-            onChange={(email) => setForm({ ...form, email })}
-            placeholder="name@example.com"
-          />
+            <FormField label="البريد الإلكتروني" htmlFor="profile-email">
+              <Input
+                id="profile-email"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="name@example.com"
+              />
+            </FormField>
 
-          <TextField
-            label="New Password"
-            type="password"
-            value={form.password}
-            onChange={(password) => setForm({ ...form, password })}
-            placeholder="(Leave blank to keep current)"
-          />
+            <FormField label="كلمة مرور جديدة" htmlFor="profile-password" hint="اتركها فارغة للإبقاء على كلمة المرور الحالية">
+              <Input
+                id="profile-password"
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                placeholder="••••••••"
+              />
+            </FormField>
 
-          {saved && (
-            <p style={{
-              margin: '0', fontSize: '0.85rem', color: 'var(--success)', fontWeight: '600',
-              backgroundColor: 'var(--success-soft)', padding: '8px 12px',
-              border: '1px solid var(--success-border)', borderRadius: 'var(--radius-sm)',
-            }}>
-              Profile changes saved successfully.
-            </p>
-          )}
+            {status === 'saved' && (
+              <Alert variant="success">
+                <AlertDescription>تم حفظ التغييرات بنجاح.</AlertDescription>
+              </Alert>
+            )}
+            {status === 'error' && (
+              <Alert variant="destructive">
+                <AlertDescription>تعذّر حفظ التغييرات. يرجى المحاولة مرة أخرى.</AlertDescription>
+              </Alert>
+            )}
 
-          <button
-            className="primary-button"
-            type="submit"
-            disabled={isSaving}
-            style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: '100%', minHeight: '44px', backgroundColor: 'var(--primary)',
-              color: 'var(--text-inverse)', border: 'none', borderRadius: 'var(--radius-md)',
-              fontWeight: '700', fontSize: '0.95rem',
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              opacity: isSaving ? 0.7 : 1,
-              transition: 'all var(--transition-fast)',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
-            }}
-          >
-            {isSaving ? 'Saving Changes...' : 'Save Changes'}
-          </button>
-        </form>
+            <Button type="submit" disabled={status === 'saving'}>
+              {status === 'saving' ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+            </Button>
+          </form>
+        </Card>
       </div>
-    </PageFrame>
+    </PageShell>
   );
 }
