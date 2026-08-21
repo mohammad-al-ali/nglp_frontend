@@ -1,22 +1,30 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { Pencil, Unplug } from 'lucide-react';
 import api from '../../services/api';
-import PageFrame from '../../components/ui/PageFrame';
-import TextField from '../../components/ui/TextField';
+import PageShell from '@/components/ui/page-shell';
+import PageHeader from '@/components/ui/page-header';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import FormField from '@/components/ui/form-field';
+import StepHeader from '@/components/ui/step-header';
+import BackLink from '@/components/ui/back-link';
+import EmptyState from '@/components/ui/empty-state';
 import { categories as defaultCategories, normalizeCategory, normalizeCourse } from '../../utils/constants';
 
 export default function ManageCourse() {
   const { courseId } = useParams();
-  
-  // States
+
   const [courseInfo, setCourseInfo] = useState({ title: '', description: '', categoryId: 1 });
   const [categories, setCategories] = useState(defaultCategories);
-  const [loadingCourse, setLoadingCourse] = useState(true);
-  const [updatingInfo, setUpdatingInfo] = useState(false);
-  const [updateSuccess, setUpdateSuccess] = useState(false);
-  const [updateError, setUpdateError] = useState(null);
+  const [courseStatus, setCourseStatus] = useState('loading'); // loading | ready | error
+  const [titleError, setTitleError] = useState(null);
+  const [submitStatus, setSubmitStatus] = useState('idle'); // idle | saving | done | error
 
-  // Fetch Categories and Course Data
   useEffect(() => {
     let isMounted = true;
 
@@ -24,19 +32,17 @@ export default function ManageCourse() {
       try {
         const rootResponse = await api.get('/categories/root');
         const rootCategories = rootResponse.data.map((category) => normalizeCategory(category));
-        
+
         const childResponses = await Promise.all(
           rootCategories.map((category) => api.get(`/categories/${category.id}/sub`).catch(() => ({ data: [] })))
         );
         const childCategories = childResponses.flatMap((response, index) =>
           response.data.map((category) => normalizeCategory(category, rootCategories[index].id))
         );
-        
+
         if (isMounted) {
           const combined = [...rootCategories, ...childCategories];
-          if (combined.length > 0) {
-            setCategories(combined);
-          }
+          if (combined.length > 0) setCategories(combined);
         }
       } catch (err) {
         console.warn('Backend categories unavailable. Using local category dictionary.', err);
@@ -51,20 +57,13 @@ export default function ManageCourse() {
           setCourseInfo({
             title: normalized.title,
             description: normalized.description,
-            categoryId: normalized.categoryId || 1
+            categoryId: normalized.categoryId || 1,
           });
-          setLoadingCourse(false);
+          setCourseStatus('ready');
         }
       } catch (err) {
-        console.warn('Failed to load course details from backend. Reverting to mock fallback.', err);
-        if (isMounted) {
-          setCourseInfo({
-            title: 'كورس تجريبي',
-            description: 'وصف تجريبي قصير للكورس التعليمي.',
-            categoryId: 4
-          });
-          setLoadingCourse(false);
-        }
+        console.warn('Failed to load course details from backend.', err);
+        if (isMounted) setCourseStatus('error');
       }
     }
 
@@ -76,241 +75,102 @@ export default function ManageCourse() {
     };
   }, [courseId]);
 
-  // Save changes
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     if (!courseInfo.title.trim()) {
-      setUpdateError('يرجى تحديد عنوان الكورس.');
+      setTitleError('يرجى تحديد عنوان الكورس.');
       return;
     }
 
-    setUpdatingInfo(true);
-    setUpdateSuccess(false);
-    setUpdateError(null);
-
+    setTitleError(null);
+    setSubmitStatus('saving');
     try {
       await api.put(`/courses/${courseId}`, {
         title: courseInfo.title,
         description: courseInfo.description,
-        category: { id: courseInfo.categoryId }
+        category: { id: courseInfo.categoryId },
       });
-      setUpdateSuccess(true);
+      setSubmitStatus('done');
     } catch (err) {
-      console.warn('Backend rejected course update. Simulating local update success.', err);
-      setUpdateSuccess(true);
-    } finally {
-      setUpdatingInfo(false);
+      console.warn('Backend rejected course update.', err);
+      setSubmitStatus('error');
     }
   }
 
   return (
-    <PageFrame 
-      eyebrow="مساحة العمل للمعلم" 
-      title="تعديل بيانات الكورس"
-      actions={
-        <Link 
-          to="/teacher"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '40px',
-            padding: '0 18px',
-            borderRadius: 'var(--radius-md)',
-            backgroundColor: 'var(--surface)',
-            border: '1px solid var(--border)',
-            color: 'var(--text-main)',
-            fontWeight: '700',
-            textDecoration: 'none',
-            fontSize: '0.85rem',
-            gap: '8px',
-            boxShadow: 'var(--shadow-sm)',
-            transition: 'all var(--transition-fast)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--surface-raised)';
-            e.currentTarget.style.borderColor = 'var(--text-muted)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--surface)';
-            e.currentTarget.style.borderColor = 'var(--border)';
-          }}
-        >
-          <span>→</span>
-          <span>العودة لكورساتي</span>
-        </Link>
-      }
-    >
-      {loadingCourse ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '100px 0', direction: 'rtl' }}>
-          <div className="premium-card animate-pulse" style={{ width: '100%', maxWidth: '640px', height: '400px', borderRadius: 'var(--radius-lg)' }} />
+    <PageShell>
+      <PageHeader eyebrow="مساحة العمل للمعلم" title="تعديل بيانات الكورس" actions={<BackLink to="/teacher">العودة لكورساتي</BackLink>} />
+
+      {courseStatus === 'loading' ? (
+        <div className="flex justify-center py-20">
+          <div className="h-96 w-full max-w-xl animate-pulse rounded-lg bg-surface-raised" />
         </div>
+      ) : courseStatus === 'error' ? (
+        <EmptyState icon={Unplug} title="تعذر تحميل بيانات الكورس" description="حدث خطأ أثناء الاتصال بالخادم. يرجى تحديث الصفحة أو المحاولة مرة أخرى." />
       ) : (
-        <div 
-          style={{ 
-            display: 'flex',
-            justifyContent: 'center',
-            padding: '20px 0',
-            direction: 'rtl'
-          }}
-        >
-          <form 
-            onSubmit={handleSubmit}
-            className="premium-card"
-            style={{
-              width: '100%',
-              maxWidth: '640px',
-              padding: '40px',
-              borderRadius: 'var(--radius-lg)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '24px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span 
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50px',
-                  backgroundColor: 'var(--primary-soft)',
-                  color: 'var(--primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: '800',
-                  fontSize: '1rem'
-                }}
-              >
-                📝
-              </span>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: '800', fontFamily: 'var(--font-display)', color: 'var(--text-main)', margin: '0' }}>
-                تحديث مواصفات المنهج الدراسي
-              </h2>
-            </div>
+        <div className="flex justify-center">
+          <Card className="w-full max-w-xl p-9">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+              <StepHeader icon={Pencil} title="تحديث مواصفات المنهج الدراسي" />
 
-            <p style={{ margin: '0', color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: '1.6' }}>
-              قم بتحديث تفاصيل الكورس ومحتواه التعريفي. هذه التعديلات ستظهر مباشرة للطلاب في دليل الكورسات.
-            </p>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                قم بتحديث تفاصيل الكورس ومحتواه التعريفي. هذه التعديلات ستظهر مباشرة للطلاب في دليل الكورسات.
+              </p>
 
-            <TextField 
-              label="عنوان الكورس" 
-              value={courseInfo.title} 
-              onChange={(title) => setCourseInfo({ ...courseInfo, title })} 
-              placeholder="مثال: احترف بناء واجهات المستخدم وتجربة المستخدم"
-            />
+              <FormField label="عنوان الكورس" error={titleError} htmlFor="edit-course-title">
+                <Input
+                  id="edit-course-title"
+                  value={courseInfo.title}
+                  onChange={(e) => setCourseInfo({ ...courseInfo, title: e.target.value })}
+                  placeholder="مثال: احترف بناء واجهات المستخدم وتجربة المستخدم"
+                  aria-invalid={Boolean(titleError)}
+                />
+              </FormField>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ color: 'var(--text-main)', fontSize: '0.875rem', fontWeight: '700' }}>
-                وصف الكورس والمنهج التفصيلي
-              </label>
-              <textarea 
-                value={courseInfo.description} 
-                onChange={(e) => setCourseInfo({ ...courseInfo, description: e.target.value })} 
-                placeholder="اكتب وصفاً مفصلاً يوضح الأهداف التعليمية للكورس، المهارات المكتسبة، والمشاريع البرمجية التي سيتم تطبيقها."
-                rows={6}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  fontSize: '0.95rem',
-                  color: 'var(--text-main)',
-                  backgroundColor: 'var(--glass-input-bg)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-md)',
-                  outline: 'none',
-                  resize: 'vertical',
-                  boxShadow: 'var(--shadow-sm)',
-                  fontFamily: 'var(--font-sans)',
-                  transition: 'all var(--transition-fast)'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'var(--primary-border)';
-                  e.target.style.boxShadow = '0 0 0 3px var(--primary-soft)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'var(--border)';
-                  e.target.style.boxShadow = 'var(--shadow-sm)';
-                }}
-              />
-            </div>
+              <FormField label="وصف الكورس والمنهج التفصيلي" htmlFor="edit-course-description">
+                <Textarea
+                  id="edit-course-description"
+                  value={courseInfo.description}
+                  onChange={(e) => setCourseInfo({ ...courseInfo, description: e.target.value })}
+                  placeholder="اكتب وصفاً مفصلاً يوضح الأهداف التعليمية للكورس، المهارات المكتسبة، والمشاريع البرمجية التي سيتم تطبيقها."
+                  rows={6}
+                />
+              </FormField>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ color: 'var(--text-main)', fontSize: '0.875rem', fontWeight: '700' }}>
-                تصنيف المادة التعليمية
-              </label>
-              <select 
-                value={courseInfo.categoryId} 
-                onChange={(e) => setCourseInfo({ ...courseInfo, categoryId: Number(e.target.value) })}
-                style={{
-                  width: '100%',
-                  minHeight: '44px',
-                  padding: '0 12px',
-                  fontSize: '0.95rem',
-                  color: 'var(--text-main)',
-                  backgroundColor: 'var(--glass-input-bg)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-md)',
-                  outline: 'none',
-                  boxShadow: 'var(--shadow-sm)',
-                  cursor: 'pointer'
-                }}
-              >
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <FormField label="تصنيف المادة التعليمية" htmlFor="edit-course-category">
+                <Select
+                  id="edit-course-category"
+                  value={courseInfo.categoryId}
+                  onChange={(e) => setCourseInfo({ ...courseInfo, categoryId: Number(e.target.value) })}
+                >
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
 
-            <div 
-              style={{
-                marginTop: '16px',
-                borderTop: '1px solid var(--border)',
-                paddingTop: '24px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '12px'
-              }}
-            >
-              <button 
-                type="submit"
-                disabled={updatingInfo}
-                style={{
-                  width: '100%',
-                  minHeight: '46px',
-                  backgroundColor: 'var(--primary)',
-                  color: 'var(--text-inverse)',
-                  border: 'none',
-                  borderRadius: 'var(--radius-md)',
-                  fontWeight: '800',
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)',
-                  transition: 'all var(--transition-fast)'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--primary)'}
-              >
-                {updatingInfo ? 'جاري حفظ التغييرات...' : 'حفظ التغييرات'}
-              </button>
+              <div className="flex flex-col items-center gap-3 border-t border-border pt-6">
+                <Button type="submit" disabled={submitStatus === 'saving'} className="w-full">
+                  {submitStatus === 'saving' ? 'جاري حفظ التغييرات...' : 'حفظ التغييرات'}
+                </Button>
 
-              {updateSuccess && (
-                <div style={{ color: 'var(--success)', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  ✓ تم حفظ تفاصيل المنهج الدراسي بنجاح!
-                </div>
-              )}
-
-              {updateError && (
-                <div style={{ color: 'var(--error)', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  ❌ {updateError}
-                </div>
-              )}
-            </div>
-          </form>
+                {submitStatus === 'done' && (
+                  <Alert variant="success" className="w-full">
+                    <AlertDescription>تم حفظ تفاصيل المنهج الدراسي بنجاح.</AlertDescription>
+                  </Alert>
+                )}
+                {submitStatus === 'error' && (
+                  <Alert variant="destructive" className="w-full">
+                    <AlertDescription>تعذّر حفظ التغييرات. تحقق من الاتصال بالخادم وحاول مرة أخرى.</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            </form>
+          </Card>
         </div>
       )}
-    </PageFrame>
+    </PageShell>
   );
 }
