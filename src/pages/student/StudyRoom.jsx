@@ -302,7 +302,7 @@ export default function StudyRoom() {
 
           <span className="inline-flex items-center gap-1.5 rounded-full border border-success-border bg-success-soft px-2.5 py-1 text-xs font-bold text-success">
             <span className="size-1.5 rounded-full bg-success" />
-            اتصال ذكي بخادم البيانات
+            متصل
           </span>
         </div>
       </header>
