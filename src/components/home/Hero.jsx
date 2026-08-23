@@ -1,89 +1,87 @@
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Check, Play } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Bot, FileQuestion, Video } from 'lucide-react';
+import heroBg from '../../assets/hero-bg.jpg';
 
-const steps = [
-  { label: 'المفهوم الأساسي', state: 'done' },
-  { label: 'أمثلة تطبيقية', state: 'done' },
-  { label: 'أسئلة المساعد الذكي', state: 'active' },
-  { label: 'اختبار قصير', state: 'upcoming' },
+const FEATURES = [
+  { icon: Bot, title: 'مساعد ذكي في كل درس', desc: 'اسأل عن أي نقطة واحصل على شرح في سياق الدرس' },
+  { icon: FileQuestion, title: 'اختبارات قصيرة', desc: 'تأكد أن الفكرة وصلت قبل الانتقال للدرس التالي' },
+  { icon: Video, title: 'دروس فيديو مع تفريغ نصي', desc: 'تابع الشرح واقرأ النص المفرّغ في نفس الوقت' },
 ];
 
-export default function Hero() {
+/**
+ * Aduca's hero: a photograph under a navy scrim, left-aligned copy with a
+ * rotating word, a search field, and a coral gradient feature strip that
+ * hangs below and overlaps the following section.
+ */
+export default function Hero({ categories = [] }) {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+  const [wordIndex, setWordIndex] = useState(0);
+
+  // The rotating word cycles real category names rather than invented ones.
+  const words = categories.length > 0 ? categories.map((c) => c.name) : ['البرمجة'];
+
+  useEffect(() => {
+    if (words.length < 2) return;
+    const timer = setInterval(() => setWordIndex((i) => (i + 1) % words.length), 2200);
+    return () => clearInterval(timer);
+  }, [words.length]);
+
+  function handleSearch(event) {
+    event.preventDefault();
+    const term = query.trim();
+    navigate(term ? `/catalog?q=${encodeURIComponent(term)}` : '/catalog');
+  }
+
   return (
-    <section className="border-b border-border">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-16 px-6 py-20 lg:grid-cols-2 lg:py-28">
-        {/* Copy column */}
-        <div>
-          <p className="mb-4 font-mono text-xs font-medium uppercase tracking-wider text-primary">
-            منصة تعلّم بالفيديو مدعومة بالذكاء الاصطناعي
-          </p>
-          <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl">
-            شاهد الدرس، اسأل، ثم تأكد أنك فهمت
+    <section className="relative">
+      <div className="relative bg-cover bg-center pt-32" style={{ backgroundImage: `url(${heroBg})` }}>
+        <div className="absolute inset-0 bg-brand/85" />
+
+        <div className="relative mx-auto w-[min(1200px,calc(100%-48px))]">
+          <h1 className="pb-4 text-4xl font-bold leading-tight text-white lg:text-[55px] lg:leading-[60px]">
+            ابدأ رحلتك في{' '}
+            <span key={wordIndex} className="inline-block animate-in fade-in zoom-in-95 duration-500 text-white">
+              {words[wordIndex]}
+            </span>
           </h1>
-          <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground">
-            كل درس مرئي مرتبط بمساعد ذكي يجيب على أسئلتك في سياق الدرس نفسه، واختبار
-            قصير في النهاية يتأكد أن الفكرة وصلت قبل الانتقال للدرس التالي.
+          <p className="max-w-2xl pb-6 text-lg leading-8 text-white/80">
+            دروس فيديو مدعومة بمساعد ذكي يجيب على أسئلتك لحظياً، واختبارات قصيرة تقيس فهمك بعد كل درس.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button as={Link} to="/catalog">
-              استكشف الكورسات
-              <ArrowLeft className="size-4" />
-            </Button>
-            <Button as={Link} to="/dashboard" variant="outline">
-              الذهاب إلى لوحة التعلم
-            </Button>
-          </div>
+
+          <form onSubmit={handleSearch} className="relative w-full pt-2 lg:w-1/2">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ما الذي تريد تعلمه؟"
+              className="h-[50px] w-full rounded-md border border-transparent bg-surface ps-4 pe-12 text-sm text-foreground outline-none transition-colors duration-200 focus:border-primary"
+            />
+            <button
+              type="submit"
+              aria-label="بحث"
+              className="absolute end-3 top-1/2 -translate-y-1/2 text-foreground transition-colors duration-200 hover:text-primary"
+            >
+              <Search className="size-[18px]" />
+            </button>
+          </form>
         </div>
 
-        {/* Signature: study room mockup */}
-        <div className="rounded-lg border border-border bg-surface shadow-soft-lg">
-          <div className="flex items-center gap-1.5 border-b border-border px-4 py-3">
-            <span className="size-2 rounded-full bg-border-hover" />
-            <span className="size-2 rounded-full bg-border-hover" />
-            <span className="size-2 rounded-full bg-border-hover" />
-            <span className="ms-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
-              غرفة الدراسة
-            </span>
-          </div>
-
-          <div className="grid grid-cols-[minmax(0,7rem)_1fr] gap-0">
-            <ol className="flex flex-col gap-1 border-e border-border p-3">
-              {steps.map((step, i) => (
-                <li
-                  key={step.label}
-                  className={`flex items-start gap-2 rounded-md p-2 text-xs ${
-                    step.state === 'active' ? 'bg-primary-soft text-primary' : 'text-muted-foreground'
-                  }`}
-                >
-                  {step.state === 'done' ? (
-                    <Check className="mt-0.5 size-3 shrink-0 text-primary" />
-                  ) : (
-                    <span className="mt-0.5 font-mono text-xs shrink-0">
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                  )}
-                  <span className={step.state === 'upcoming' ? 'opacity-60' : ''}>{step.label}</span>
-                </li>
-              ))}
-            </ol>
-
-            <div className="flex flex-col gap-3 p-4">
-              <div className="flex aspect-video items-center justify-center rounded-md border border-border bg-surface-raised">
-                <span className="flex size-9 items-center justify-center rounded-full border border-border-hover">
-                  <Play className="size-3.5 fill-muted-foreground text-muted-foreground" />
+        {/* Coral feature strip — sits below the copy and bleeds into the next section */}
+        <div className="relative mt-32 bg-gradient-to-bl from-primary to-[#f58585]">
+          <div className="mx-auto grid w-[min(1200px,calc(100%-48px))] grid-cols-1 gap-6 py-6 md:grid-cols-3">
+            {FEATURES.map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="flex items-center gap-4 py-2">
+                <span className="flex size-[60px] shrink-0 items-center justify-center rounded-full bg-surface shadow-icon">
+                  <Icon className="size-7 text-primary" />
                 </span>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <div className="max-w-[85%] rounded-md border-s-2 border-primary bg-primary-soft px-3 py-2 text-xs leading-relaxed text-foreground">
-                  الفكرة الأساسية هي أن الحالة (state) تتحكم بما يظهر على الشاشة.
-                </div>
-                <div className="max-w-[75%] self-end rounded-md bg-surface-raised px-3 py-2 text-xs leading-relaxed text-foreground">
-                  ما الفرق بينها وبين props؟
+                <div>
+                  <h4 className="text-xl font-bold text-white">{title}</h4>
+                  <p className="text-white/85">{desc}</p>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>

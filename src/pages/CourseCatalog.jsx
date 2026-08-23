@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Unplug, FolderOpen } from 'lucide-react';
+import { Unplug, FolderOpen, Search } from 'lucide-react';
 import api from '../services/api';
 import PageShell from '@/components/ui/page-shell';
 import PageHeader from '@/components/ui/page-header';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import EmptyState from '@/components/ui/empty-state';
 import CourseCard from '@/components/CourseCard';
@@ -21,6 +22,7 @@ export default function CourseCatalog() {
   });
 
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
+  const [query, setQuery] = useState(searchParams.get('q') || '');
 
   useEffect(() => {
     let isMounted = true;
@@ -61,9 +63,19 @@ export default function CourseCatalog() {
     };
   }, []);
 
-  const filteredCourses = catalogState.courses.filter((course) =>
-    categoryMatches(course, selectedCategory, catalogState.categories)
-  );
+  const trimmedQuery = query.trim().toLowerCase();
+  const filteredCourses = catalogState.courses.filter((course) => {
+    if (!categoryMatches(course, selectedCategory, catalogState.categories)) return false;
+    if (!trimmedQuery) return true;
+    return course.title.toLowerCase().includes(trimmedQuery) || course.description.toLowerCase().includes(trimmedQuery);
+  });
+
+  function updateParams(next) {
+    const params = {};
+    if (next.category && next.category !== 'all') params.category = next.category;
+    if (next.q) params.q = next.q;
+    setSearchParams(params);
+  }
 
   return (
     <PageShell>
@@ -73,13 +85,26 @@ export default function CourseCatalog() {
         actions={catalogState.error ? <Badge variant="destructive">خطأ في الاتصال بالخادم</Badge> : null}
       />
 
+      <div className="mb-4 flex items-center gap-2">
+        <Search className="size-4 shrink-0 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            updateParams({ category: selectedCategory, q: e.target.value });
+          }}
+          placeholder="ابحث في عنوان الكورس أو وصفه..."
+          className="h-10"
+        />
+      </div>
+
       <div className="mb-6 flex items-center gap-2 overflow-x-auto rounded-md border border-border bg-surface p-3">
-        <span className="shrink-0 font-mono text-xs font-semibold text-muted-foreground">التصنيف:</span>
+        <span className="shrink-0 text-xs font-semibold text-muted-foreground">التصنيف:</span>
 
         <button
           onClick={() => {
             setSelectedCategory('all');
-            setSearchParams({});
+            updateParams({ category: 'all', q: query });
           }}
           className={cn(
             'inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-md border px-3 text-xs font-semibold transition-all duration-200 ease-in-out',
@@ -98,7 +123,7 @@ export default function CourseCatalog() {
               key={category.id}
               onClick={() => {
                 setSelectedCategory(String(category.id));
-                setSearchParams({ category: category.id });
+                updateParams({ category: category.id, q: query });
               }}
               className={cn(
                 'inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-md border px-3 text-xs font-medium transition-all duration-200 ease-in-out',

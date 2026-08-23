@@ -1,37 +1,55 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { BookOpen } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 
+/**
+ * Course card following Aduca's anatomy, minus the rows NGLP has no data
+ * behind: no star rating, no review count, no price. The backend carries no
+ * rating or price concept at all, and Course exposes neither a lesson
+ * collection nor an enrolment count — so `lessonsCount` and `students` are
+ * always 0 against the live API and are deliberately not rendered here.
+ */
 export default function CourseCard({ course }) {
   return (
-    <article className="flex flex-col justify-between overflow-hidden rounded-lg border border-border bg-surface shadow-soft transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:border-border-hover hover:shadow-soft-lg">
-      {course.imageUrl && (
-        <img src={course.imageUrl} alt="" className="h-36 w-full object-cover" />
-      )}
-      <div className="flex flex-1 flex-col justify-between p-6">
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <Badge>{course.category}</Badge>
-            <span className="text-xs font-medium text-muted-foreground">{course.level}</span>
-          </div>
-          <h3 className="font-display text-lg font-semibold leading-snug text-foreground">{course.title}</h3>
-          <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{course.description}</p>
-        </div>
+    <Card className="group flex flex-col overflow-hidden border-0 hover:shadow-soft-lg">
+      <Link to={`/catalog/${course.id}`} className="relative block aspect-video overflow-hidden bg-surface-raised">
+        {course.imageUrl ? (
+          <img
+            src={course.imageUrl}
+            alt=""
+            className="size-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
+          />
+        ) : (
+          <span className="flex size-full items-center justify-center">
+            <BookOpen className="size-9 text-muted-foreground/40" />
+          </span>
+        )}
+      </Link>
 
-        <div className="mt-6">
-          <div className="flex items-center justify-between border-t border-border pt-4 font-mono text-xs text-muted-foreground">
-            <span>{course.lessonsCount ?? course.lessons?.length ?? 0} دروس</span>
-            <span>{course.students?.toLocaleString('en-US') ?? 0} طالب مسجل</span>
+      <div className="flex flex-1 flex-col p-6">
+        <span className="mb-3 inline-flex w-fit rounded-sm bg-info-soft px-2 py-0.5 text-sm font-medium text-info">
+          {course.category}
+        </span>
+
+        <h3 className="text-xl font-semibold leading-snug text-foreground transition-colors duration-200 group-hover:text-primary">
+          <Link to={`/catalog/${course.id}`}>{course.title}</Link>
+        </h3>
+
+        {course.teacherName && (
+          <div className="mt-2 flex items-center gap-2">
+            {course.teacherAvatarUrl ? (
+              <img src={course.teacherAvatarUrl} alt="" className="size-6 shrink-0 rounded-full object-cover" />
+            ) : (
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs font-bold text-primary">
+                {course.teacherName.charAt(0)}
+              </span>
+            )}
+            <span className="truncate text-sm text-muted-foreground">{course.teacherName}</span>
           </div>
-          <Link
-            to={`/catalog/${course.id}`}
-            className="group mt-4 flex h-10 items-center justify-center gap-1.5 rounded-md border border-border text-sm font-medium text-foreground outline-none transition-all duration-200 ease-in-out hover:border-primary-border hover:bg-primary-soft hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            استكشاف الكورس
-            <ArrowLeft className="size-4 transition-transform duration-200 ease-in-out group-hover:-translate-x-0.5" />
-          </Link>
-        </div>
+        )}
+
+        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{course.description}</p>
       </div>
-    </article>
+    </Card>
   );
 }

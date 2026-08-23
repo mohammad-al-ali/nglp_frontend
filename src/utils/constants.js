@@ -209,6 +209,10 @@ export function normalizeCourse(course) {
     lessonsCount: course.lessonsCount || course.lessons?.length || 0,
     description: course.description || 'لا يوجد وصف تفصيلي متوفر حالياً لهذا الكورس.',
     imageUrl: resolveMediaUrl(course.imageUrl) || null,
+    // The backend has always serialized `teacher` on every /courses response;
+    // this normalizer used to drop it on the floor.
+    teacherName: course.teacher?.fullName || null,
+    teacherAvatarUrl: resolveMediaUrl(course.teacher?.avatarUrl) || null,
   };
 }
 
