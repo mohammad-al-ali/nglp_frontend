@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Loader2, ArrowRight, ChevronLeft, PanelLeftOpen, Bot, FileText, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Loader2, ArrowRight, ChevronLeft, PanelLeft, PanelRight, PanelBottom, AlertTriangle, RefreshCw } from 'lucide-react';
 import api, { API_BASE_URL, getCurrentUserId } from '../../services/api';
 import { normalizeCourse, normalizeLesson } from '../../utils/constants';
 import { useFetchProviders, useFetchUserSettings, useUpdateUserSettings } from '../../hooks/useQuiz';
@@ -284,9 +284,19 @@ export default function StudyRoom() {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <HeaderToggleButton active={showLessons} onClick={() => setShowLessons(!showLessons)} title="قائمة الدروس" icon={PanelLeftOpen} />
-          <HeaderToggleButton active={showTutor} onClick={() => setShowTutor(!showTutor)} title="مساعد الذكاء الاصطناعي" icon={Bot} />
-          <HeaderToggleButton active={showDetails} onClick={() => setShowDetails(!showDetails)} title="تفاصيل الدرس" icon={FileText} />
+          {/*
+           * IDE-style panel toggles (à la VS Code's layout icons): each icon
+           * is the same split-pane glyph with only its own segment filled,
+           * so the three read as one coherent workspace-layout control
+           * rather than three unrelated feature buttons. DOM order here is
+           * deliberately [right, bottom, left] — this app is RTL, and a row
+           * lays its first child at the inline-start (physically the right
+           * edge), so that order is what renders left-to-right on screen as
+           * left / bottom / right, matching the icons' own handedness.
+           */}
+          <HeaderToggleButton active={showTutor} onClick={() => setShowTutor(!showTutor)} title="الشريط الجانبي الأيمن — مساعد الذكاء الاصطناعي" icon={PanelRight} />
+          <HeaderToggleButton active={showDetails} onClick={() => setShowDetails(!showDetails)} title="اللوحة السفلية — تفاصيل الدرس والتفريغ النصي" icon={PanelBottom} />
+          <HeaderToggleButton active={showLessons} onClick={() => setShowLessons(!showLessons)} title="الشريط الجانبي الأيسر — قائمة الدروس" icon={PanelLeft} />
 
           <span className="mx-1.5 h-5 w-px bg-border" />
 
