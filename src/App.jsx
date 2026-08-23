@@ -8,6 +8,8 @@
 } from 'react-router-dom';
 import RoleRoute, { ROLE_ADMIN, ROLE_STUDENT, ROLE_TEACHER } from './components/RoleRoute';
 import Sidebar from './components/Sidebar';
+import MarketingHeader from './components/layout/MarketingHeader';
+import MarketingFooter from './components/layout/MarketingFooter';
 
 // Import extracted pages
 import LandingPage from './pages/LandingPage';
@@ -33,8 +35,10 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<AppShell />}>
+        <Route element={<MarketingShell />}>
           <Route path="/" element={<LandingPage />} />
+        </Route>
+        <Route element={<AppShell />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route
@@ -190,6 +194,23 @@ function AppShell() {
       >
         <Outlet />
       </main>
+    </div>
+  );
+}
+
+/**
+ * Public marketing layout: top header + footer, no sidebar. The landing page
+ * is a full-bleed marketing page, so the sidebar's 280px offset would fight
+ * its hero and full-width bands.
+ */
+function MarketingShell() {
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }}>
+      <MarketingHeader />
+      <main style={{ flex: 1 }}>
+        <Outlet />
+      </main>
+      <MarketingFooter />
     </div>
   );
 }

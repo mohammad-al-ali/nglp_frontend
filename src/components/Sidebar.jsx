@@ -1,5 +1,5 @@
 import { NavLink, Link } from 'react-router-dom';
-import { LayoutGrid, User, GraduationCap, BookOpen, Plus, ListChecks, Users, FolderTree, LogOut, LogIn, UserPlus } from 'lucide-react';
+import { Home, LayoutGrid, User, GraduationCap, BookOpen, Plus, ListChecks, Users, FolderTree, LogOut, LogIn, UserPlus } from 'lucide-react';
 import { getStoredUser } from '../services/api';
 import { resolveMediaUrl } from '../utils/constants';
 import { isAdmin, isTeacher, isStudent } from '@/lib/roles';
@@ -39,9 +39,14 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto py-6">
+        <NavLink to="/" end className={navLinkClass}>
+          <Home className="size-4" />
+          <span>الرئيسية</span>
+        </NavLink>
+
         <NavLink to="/catalog" className={navLinkClass}>
           <LayoutGrid className="size-4" />
-          <span>الرئيسية</span>
+          <span>الكورسات</span>
         </NavLink>
 
         {user && (
