@@ -1,38 +1,58 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=El+Messiri:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+﻿/* Fonts are loaded via <link> tags in index.html — a CSS @import here would
+   serialize into a render-blocking waterfall behind this stylesheet. */
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/*
+ * Palette, type, and elevation follow the Aduca education template's design
+ * language. Aduca carries two brand colors — navy for headings and structure,
+ * coral for calls to action — which map onto the two roles this token set
+ * already separates: --color-foreground (headings/dark text) and
+ * --color-primary (CTA/active/focus). That split is why adopting the palette
+ * needed no component edits.
+ */
 @theme {
-  --color-background: #f8fafc;
+  --color-background: #f7f7ff;
   --color-surface: #ffffff;
   --color-surface-raised: #f3f4f6;
-  --color-foreground: #111827;
-  --color-muted-foreground: #4b5563;
+  --color-foreground: #233d63;
+  --color-muted-foreground: #7f8897;
   --color-border: #e5e7eb;
   --color-border-hover: #d1d5db;
-  --color-primary: #4f46e5;
-  --color-primary-hover: #4338ca;
+  --color-primary: #ec5252;
+  --color-primary-hover: #ef6767;
   --color-primary-foreground: #ffffff;
-  --color-primary-soft: #eef2ff;
-  --color-primary-border: #c7d2fe;
+  --color-primary-soft: #fdeeee;
+  --color-primary-border: #f9d6d6;
   --color-text-inverse: #ffffff;
 
-  --color-success: #16a34a;
+  /* Navy as a *surface* (hero overlay, logo mark) rather than as text. Same
+     value as --color-foreground; the two differ in role, not in color. */
+  --color-brand: #233d63;
+
+  --color-success: #38bb0c;
   --color-success-soft: #f0fdf4;
   --color-success-border: #bbf7d0;
-  --color-warning: #d97706;
+  --color-warning: #f68a03;
   --color-warning-soft: #fffbeb;
   --color-warning-border: #fde68a;
-  --color-error: #dc2626;
+  --color-error: #dd493d;
   --color-error-soft: #fef2f2;
   --color-error-border: #fecaca;
+  --color-info: #358ff7;
+  --color-info-soft: #eef5fe;
+  --color-info-border: #c5dcfb;
+
+  /* Accent tones used only to color the category-tile icon circles. */
+  --color-purple: #7e3cf9;
+  --color-sky: #3aaae1;
 
   /*
    * shadcn/ui-canonical aliases. `npx shadcn add` emits components that
    * reference these exact names (bg-card, text-popover-foreground,
    * border-input, ring-ring, bg-accent, bg-muted, text-destructive, ...).
    * Without them a generated component renders partly unstyled with no
-   * error. Mapped onto the existing neutral + indigo system rather than
+   * error. Mapped onto the existing navy + coral system rather than
    * introducing a second palette.
    */
   --color-card: var(--color-surface);
@@ -49,26 +69,37 @@
   --color-destructive: var(--color-error);
   --color-destructive-foreground: #ffffff;
 
-  --font-sans: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: 'El Messiri', 'IBM Plex Sans Arabic', sans-serif;
+  /*
+   * Inter carries no Arabic glyphs, so the pairing is load-bearing rather
+   * than decorative: Inter renders Latin and numerals, IBM Plex Sans Arabic
+   * renders Arabic script. Aduca is single-family throughout, so
+   * --font-display deliberately resolves to the same stack — that keeps the
+   * 38 existing `font-display` call sites and the global h1-h6 rule correct
+   * without touching them.
+   */
+  --font-sans: 'Inter', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: 'Inter', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: 'IBM Plex Mono', 'IBM Plex Sans Arabic', monospace;
 
   /*
    * Deliberate overrides of Tailwind's built-in radius and shadow scale.
-   * These values are the project design system (see docs/DESIGN_SYSTEM.md).
-   * Without this block, rounded-lg/shadow-md utilities would silently
-   * fall back to Tailwind's stock 8px/6px scale instead.
+   * Aduca's scale is 5px on buttons and inputs, 8px on cards. Button/Input/
+   * Select use rounded-md and Card/Dialog use rounded-lg, so setting those
+   * two keys reproduces the template's scale with no component edits.
    */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04);
+  --radius-sm: 4px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
+  --shadow-sm: 0 0 7px rgba(0, 0, 0, 0.07);
   --shadow-md: 0 2px 8px rgba(24, 24, 27, 0.06);
   --shadow-lg: 0 8px 24px rgba(24, 24, 27, 0.08);
 
-  /* Soft, highly diffused elevation — cards should feel like they float, never a hard drop shadow */
-  --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --shadow-soft-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  /* Aduca's elevation is a single very wide, very soft halo rather than a
+     directional drop shadow — this is what makes its cards read as floating. */
+  --shadow-soft: 0 0 40px rgba(82, 85, 90, 0.10);
+  --shadow-soft-lg: 0 0 40px rgba(82, 85, 90, 0.16);
+  --shadow-icon: 0 0 40px rgba(14, 16, 48, 0.07);
+  --shadow-tab: 0 6px 25px rgba(14, 16, 48, 0.10);
 }
 
 :root {
@@ -115,20 +146,20 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: color-mix(in srgb, var(--color-muted-foreground) 45%, transparent);
     border-radius: var(--radius-full);
     border: 2px solid transparent;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: var(--color-muted-foreground);
   }
 
+  /* Aduca applies no tracking convention anywhere — headings sit at 0. */
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     font-weight: 700;
     color: var(--color-foreground);
-    letter-spacing: -0.02em;
   }
 
   p {
@@ -172,9 +203,9 @@
   ) {
     width: 100%;
     color: var(--color-foreground);
-    background: #ffffff;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-hover);
+    border-radius: var(--radius-md);
     outline: none;
   }
 
