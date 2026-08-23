@@ -84,28 +84,16 @@ export default function AiTutorPanel({
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t border-border">
-          <div className="flex flex-wrap items-center gap-2 border-b border-border px-3.5 py-2 text-xs">
-            <span className="whitespace-nowrap font-semibold text-muted-foreground">نموذج الذكاء الاصطناعي:</span>
-            <Select value={providerKey} onChange={onProviderChange} className="h-7 w-auto min-w-[90px] px-2 text-xs">
-              {providers.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.key}
-                </option>
-              ))}
-            </Select>
-            <Select value={modelKey} onChange={onModelChange} disabled={!providerKey} className="h-7 w-auto min-w-[130px] px-2 text-xs">
-              {providers
-                .find((p) => p.key === providerKey)
-                ?.models?.map((m) => (
-                  <option key={m.key} value={m.key}>
-                    {m.name}
-                  </option>
-                ))}
-            </Select>
-          </div>
-
-          <form onSubmit={onSubmit} className="flex gap-2 p-3.5">
+        <div className="border-t border-border p-3.5">
+          {/*
+           * One bordered card holds everything — textarea, model pickers,
+           * send button — so the send action sits inline in the toolbar
+           * row instead of as a separate boxed button beside the input.
+           */}
+          <form
+            onSubmit={onSubmit}
+            className="flex flex-col rounded-lg border border-border bg-surface transition-all duration-200 ease-in-out focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-soft"
+          >
             <textarea
               ref={chatInputRef}
               value={chatMessage}
@@ -117,18 +105,51 @@ export default function AiTutorPanel({
               placeholder={isSending ? 'جاري صياغة الرد...' : 'اسأل مساعد الذكاء الاصطناعي...'}
               disabled={isSending}
               rows={1}
-              className="max-h-[120px] min-h-10 flex-1 resize-none rounded-md border border-border bg-surface px-3 py-2.5 text-sm leading-relaxed text-foreground outline-none transition-all duration-200 ease-in-out focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary-soft"
+              className="max-h-[120px] min-h-10 w-full resize-none border-0 bg-transparent px-3 pt-2.5 pb-1.5 text-sm leading-relaxed text-foreground outline-none"
             />
-            <button
-              type="submit"
-              disabled={isSending || !chatMessage.trim()}
-              className={cn(
-                'flex h-10 min-w-11 shrink-0 items-center justify-center self-end rounded-md transition-all duration-200 ease-in-out',
-                chatMessage.trim() && !isSending ? 'bg-primary text-primary-foreground hover:bg-primary-hover' : 'cursor-not-allowed bg-border text-muted-foreground'
-              )}
-            >
-              <Send className="size-4" />
-            </button>
+
+            <div className="flex items-center justify-between gap-2 p-1.5 pt-0.5">
+              <div className="flex min-w-0 items-center gap-1">
+                <Select
+                  value={providerKey}
+                  onChange={onProviderChange}
+                  className="h-7 w-auto min-w-0 border-0 bg-transparent px-1.5 text-xs text-muted-foreground shadow-none hover:bg-surface-raised"
+                >
+                  {providers.map((p) => (
+                    <option key={p.key} value={p.key}>
+                      {p.key}
+                    </option>
+                  ))}
+                </Select>
+                <Select
+                  value={modelKey}
+                  onChange={onModelChange}
+                  disabled={!providerKey}
+                  className="h-7 w-auto min-w-0 border-0 bg-transparent px-1.5 text-xs text-muted-foreground shadow-none hover:bg-surface-raised"
+                >
+                  {providers
+                    .find((p) => p.key === providerKey)
+                    ?.models?.map((m) => (
+                      <option key={m.key} value={m.key}>
+                        {m.name}
+                      </option>
+                    ))}
+                </Select>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSending || !chatMessage.trim()}
+                className={cn(
+                  'flex size-7 shrink-0 items-center justify-center rounded-md transition-all duration-200 ease-in-out',
+                  chatMessage.trim() && !isSending
+                    ? 'bg-primary text-primary-foreground hover:bg-primary-hover'
+                    : 'cursor-not-allowed bg-surface-raised text-muted-foreground'
+                )}
+              >
+                <Send className="size-3.5" />
+              </button>
+            </div>
           </form>
         </div>
       </div>
