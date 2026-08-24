@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Video, Zap, BookOpen, Inbox, GraduationCap, FolderOpen, Unplug } from 'lucide-react';
+import { Video, Zap, BookOpen, Inbox, GraduationCap, FolderOpen, Unplug, ImagePlus } from 'lucide-react';
 import api, { getCurrentUserId } from '../../services/api';
 import PageShell from '@/components/ui/page-shell';
 import PageHeader from '@/components/ui/page-header';
@@ -29,6 +29,10 @@ export default function ManageLessons() {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
+
+  const [imageTargetLessonId, setImageTargetLessonId] = useState(null);
+  const [imageUploadStatus, setImageUploadStatus] = useState({}); // { [lessonId]: 'uploading' | 'error' }
+  const lessonImageInputRef = useRef(null);
 
   const [lessonTitle, setLessonTitle] = useState('');
   const [lessonDescription, setLessonDescription] = useState('');
@@ -108,6 +112,35 @@ export default function ManageLessons() {
     } catch (err) {
       console.warn('Failed to delete lesson.', err);
       setDeleteError(`تعذّر حذف الدرس "${deleteTarget.title}". يرجى المحاولة مرة أخرى.`);
+    }
+  }
+
+  function triggerLessonImageUpload(lessonId) {
+    setImageTargetLessonId(lessonId);
+    lessonImageInputRef.current?.click();
+  }
+
+  async function handleLessonImageChange(event) {
+    const file = event.target.files?.[0];
+    const lessonId = imageTargetLessonId;
+    event.target.value = '';
+    if (!file || !lessonId) return;
+
+    setImageUploadStatus((current) => ({ ...current, [lessonId]: 'uploading' }));
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const response = await api.post(`/lessons/${lessonId}/image`, formData);
+      const normalized = normalizeLesson(response.data);
+      setLessons((current) => current.map((l) => (l.id === lessonId ? { ...l, imageUrl: normalized.imageUrl } : l)));
+      setImageUploadStatus((current) => {
+        const next = { ...current };
+        delete next[lessonId];
+        return next;
+      });
+    } catch (err) {
+      console.warn('Failed to upload lesson image.', err);
+      setImageUploadStatus((current) => ({ ...current, [lessonId]: 'error' }));
     }
   }
 
@@ -301,41 +334,60 @@ export default function ManageLessons() {
                   {lessons.map((lesson, idx) => (
                     <div
                       key={lesson.id}
-                      className="flex items-center justify-between gap-4 rounded-md border border-border p-4 transition-colors duration-200 ease-in-out hover:border-primary-border"
+                      className="flex flex-col gap-2 rounded-md border border-border p-4 transition-colors duration-200 ease-in-out hover:border-primary-border"
                     >
-                      <div className="flex min-w-0 items-center gap-3">
-                        {lesson.imageUrl ? (
-                          <img src={lesson.imageUrl} alt="" className="size-10 shrink-0 rounded-md object-cover" />
-                        ) : (
-                          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-raised text-sm font-bold text-muted-foreground">
-                            {idx + 1}
-                          </span>
-                        )}
-                        <div className="min-w-0">
-                          <strong className="block truncate text-sm font-semibold text-foreground">{lesson.title}</strong>
-                          <span className="text-xs text-muted-foreground">مدة العرض: {lesson.duration}</span>
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex min-w-0 items-center gap-3">
+                          {lesson.imageUrl ? (
+                            <img src={lesson.imageUrl} alt="" className="size-10 shrink-0 rounded-md object-cover" />
+                          ) : (
+                            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-raised text-sm font-bold text-muted-foreground">
+                              {idx + 1}
+                            </span>
+                          )}
+                          <div className="min-w-0">
+                            <strong className="block truncate text-sm font-semibold text-foreground">{lesson.title}</strong>
+                            <span className="text-xs text-muted-foreground">مدة العرض: {lesson.duration}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={imageUploadStatus[lesson.id] === 'uploading'}
+                            title={imageUploadStatus[lesson.id] === 'error' ? 'تعذّر رفع الصورة، حاول مرة أخرى' : 'تغيير صورة الدرس'}
+                            className={imageUploadStatus[lesson.id] === 'error' ? 'border-error-border text-error hover:bg-error-soft' : undefined}
+                            onClick={() => triggerLessonImageUpload(lesson.id)}
+                          >
+                            <ImagePlus className="size-3.5" />
+                            {imageUploadStatus[lesson.id] === 'uploading' ? 'جاري الرفع...' : 'الصورة'}
+                          </Button>
+                          <Button as={Link} to={`/teacher/quiz-manager/${courseId}/${lesson.id}`} variant="outline" size="sm">
+                            الاختبارات
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-error-border text-error hover:bg-error-soft"
+                            onClick={() => setDeleteTarget({ id: lesson.id, title: lesson.title })}
+                          >
+                            حذف
+                          </Button>
                         </div>
                       </div>
 
-                      <div className="flex shrink-0 items-center gap-2">
-                        <Button as={Link} to={`/teacher/quiz-manager/${courseId}/${lesson.id}`} variant="outline" size="sm">
-                          الاختبارات
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-error-border text-error hover:bg-error-soft"
-                          onClick={() => setDeleteTarget({ id: lesson.id, title: lesson.title })}
-                        >
-                          حذف
-                        </Button>
-                      </div>
+                      {imageUploadStatus[lesson.id] === 'error' && (
+                        <p className="text-xs text-error">تعذّر رفع صورة هذا الدرس، تحقق من اتصال الخادم وحاول مرة أخرى.</p>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
             </Card>
           </div>
+
+          <input ref={lessonImageInputRef} type="file" accept="image/*" onChange={handleLessonImageChange} className="hidden" />
         </>
       )}
 

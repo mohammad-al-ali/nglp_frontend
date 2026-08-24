@@ -14,16 +14,18 @@ import FormField from '@/components/ui/form-field';
 import StepHeader from '@/components/ui/step-header';
 import BackLink from '@/components/ui/back-link';
 import EmptyState from '@/components/ui/empty-state';
+import ImagePicker from '@/components/ui/ImagePicker';
 import { categories as defaultCategories, normalizeCategory, normalizeCourse } from '../../utils/constants';
 
 export default function ManageCourse() {
   const { courseId } = useParams();
 
-  const [courseInfo, setCourseInfo] = useState({ title: '', description: '', categoryId: 1 });
+  const [courseInfo, setCourseInfo] = useState({ title: '', description: '', categoryId: 1, imageUrl: null });
   const [categories, setCategories] = useState(defaultCategories);
   const [courseStatus, setCourseStatus] = useState('loading'); // loading | ready | error
   const [titleError, setTitleError] = useState(null);
   const [submitStatus, setSubmitStatus] = useState('idle'); // idle | saving | done | error
+  const [imageStatus, setImageStatus] = useState('idle'); // idle | uploading | done | error
 
   useEffect(() => {
     let isMounted = true;
@@ -58,6 +60,7 @@ export default function ManageCourse() {
             title: normalized.title,
             description: normalized.description,
             categoryId: normalized.categoryId || 1,
+            imageUrl: normalized.imageUrl,
           });
           setCourseStatus('ready');
         }
@@ -94,6 +97,22 @@ export default function ManageCourse() {
     } catch (err) {
       console.warn('Backend rejected course update.', err);
       setSubmitStatus('error');
+    }
+  }
+
+  async function handleImageChange(file) {
+    if (!file) return;
+    setImageStatus('uploading');
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const response = await api.post(`/courses/${courseId}/image`, formData);
+      const normalized = normalizeCourse(response.data);
+      setCourseInfo((current) => ({ ...current, imageUrl: normalized.imageUrl }));
+      setImageStatus('done');
+    } catch (err) {
+      console.warn('Failed to upload course image.', err);
+      setImageStatus('error');
     }
   }
 
@@ -150,6 +169,16 @@ export default function ManageCourse() {
                   ))}
                 </Select>
               </FormField>
+
+              <div className="flex flex-col gap-2">
+                <ImagePicker
+                  label="صورة غلاف الكورس"
+                  hint={imageStatus === 'uploading' ? 'جاري رفع الصورة...' : 'تظهر كصورة غلاف للكورس في دليل الكورسات وبطاقاته.'}
+                  existingUrl={courseInfo.imageUrl}
+                  onChange={handleImageChange}
+                />
+                {imageStatus === 'error' && <p className="text-xs text-error">تعذّر رفع الصورة، تحقق من اتصال الخادم وحاول مرة أخرى.</p>}
+              </div>
 
               <div className="flex flex-col items-center gap-3 border-t border-border pt-6">
                 <Button type="submit" disabled={submitStatus === 'saving'} className="w-full">
