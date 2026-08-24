@@ -187,6 +187,14 @@ function AppShell() {
       <main
         style={{
           flex: 1,
+          // Flex items default to min-width:auto, which refuses to shrink
+          // below the content's natural (non-wrapping) width. Any page with
+          // a wide row inside (e.g. CourseCatalog's category-chip strip)
+          // then pushes this whole column past the viewport instead of
+          // being contained by it, throwing off PageShell's centering and
+          // clipping content at the far edge. min-width:0 is the standard
+          // fix for a flex item meant to hold scrollable/wrapping content.
+          minWidth: 0,
           marginInlineStart: 'var(--sidebar-width)',
           minHeight: '100vh',
           transition: 'margin-inline-start var(--transition-normal)'
