@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Search, ChevronDown, LogIn, UserPlus } from 'lucide-react';
+import { Link, NavLink } from 'react-router-dom';
+import { ChevronDown, LogIn, UserPlus } from 'lucide-react';
 import api, { getStoredUser } from '../../services/api';
 import { normalizeCategory } from '../../utils/constants';
 import { isAdmin, isTeacher } from '@/lib/roles';
@@ -12,12 +12,14 @@ import { cn } from '@/lib/utils';
  * header. The template's cart, phone/email bar, and dark-mode toggle have no
  * counterpart here (no commerce, no support line, light-mode-only system), so
  * tier one carries the auth affordances instead.
+ *
+ * No search field here — the hero directly below already has one, and
+ * showing both at once on the same screen was just noise. The hero's is
+ * the one that stays, since it's the more prominent entry point.
  */
 export default function MarketingHeader() {
-  const navigate = useNavigate();
   const user = getStoredUser();
   const [categories, setCategories] = useState([]);
-  const [query, setQuery] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -34,12 +36,6 @@ export default function MarketingHeader() {
       isMounted = false;
     };
   }, []);
-
-  function handleSearch(event) {
-    event.preventDefault();
-    const term = query.trim();
-    navigate(term ? `/catalog?q=${encodeURIComponent(term)}` : '/catalog');
-  }
 
   // Where the single coral call-to-action should land, per role.
   const cta = !user
@@ -67,8 +63,8 @@ export default function MarketingHeader() {
               أهلاً، {user.fullName || 'المستخدم'}
             </Link>
           ) : (
-            <ul className="flex items-center">
-              <li className="border-e border-border pe-3 me-3">
+            <ul className="flex items-center gap-4">
+              <li className="border-e border-border pe-4">
                 <Link to="/login" className="flex items-center gap-1.5 text-muted-foreground transition-colors duration-200 hover:text-primary">
                   <LogIn className="size-4" />
                   تسجيل الدخول
@@ -119,24 +115,7 @@ export default function MarketingHeader() {
             </div>
           </div>
 
-          <form onSubmit={handleSearch} className="relative hidden min-w-0 flex-1 md:block">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="ابحث عن كورس..."
-              className="h-[50px] w-full rounded-md border border-border bg-surface ps-4 pe-11 text-sm text-foreground outline-none transition-colors duration-200 focus:border-primary"
-            />
-            <button
-              type="submit"
-              aria-label="بحث"
-              className="absolute end-3 top-1/2 -translate-y-1/2 text-foreground transition-colors duration-200 hover:text-primary"
-            >
-              <Search className="size-[18px]" />
-            </button>
-          </form>
-
-          <nav className="hidden shrink-0 items-center gap-5 lg:flex">
+          <nav className="hidden min-w-0 flex-1 items-center gap-5 lg:flex">
             {[
               { to: '/', label: 'الرئيسية', end: true },
               { to: '/catalog', label: 'الكورسات', end: false },

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Bot, FileQuestion, Video } from 'lucide-react';
-import heroBg from '../../assets/hero-bg.jpg';
 
 const FEATURES = [
   { icon: Bot, title: 'مساعد ذكي في كل درس', desc: 'اسأل عن أي نقطة واحصل على شرح في سياق الدرس' },
@@ -10,9 +9,12 @@ const FEATURES = [
 ];
 
 /**
- * Aduca's hero: a photograph under a navy scrim, left-aligned copy with a
- * rotating word, a search field, and a coral gradient feature strip that
- * hangs below and overlaps the following section.
+ * Aduca's hero: originally a stock photo under a navy scrim. The template's
+ * bundled photo turned out to be an unreplaced placeholder (its pixels
+ * literally read "1920x1025"), so this is a CSS-only navy backdrop instead —
+ * a radial glow plus a faint dot grid — rather than sourcing a new licensed
+ * image. Copy is left-aligned with a rotating word, a search field, and a
+ * coral gradient feature strip that hangs below and overlaps the next section.
  */
 export default function Hero({ categories = [] }) {
   const navigate = useNavigate();
@@ -36,8 +38,15 @@ export default function Hero({ categories = [] }) {
 
   return (
     <section className="relative">
-      <div className="relative bg-cover bg-center pt-32" style={{ backgroundImage: `url(${heroBg})` }}>
-        <div className="absolute inset-0 bg-brand/85" />
+      <div className="relative overflow-hidden bg-brand pt-32">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 15% 20%, rgb(255 255 255 / 0.08), transparent 45%), radial-gradient(circle at 85% 0%, rgb(236 82 82 / 0.25), transparent 40%), radial-gradient(rgb(255 255 255 / 0.15) 1px, transparent 1px)',
+            backgroundSize: 'auto, auto, 28px 28px',
+          }}
+        />
 
         <div className="relative mx-auto w-[min(1200px,calc(100%-48px))]">
           <h1 className="pb-4 text-4xl font-bold leading-tight text-white lg:text-[55px] lg:leading-[60px]">
