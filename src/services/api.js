@@ -27,8 +27,10 @@ export function saveStoredUser(user) {
   localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
 }
 
+// يعيد null إذا لا يوجد مستخدم مسجّل دخول فعلياً — لا افتراض صامت لهوية "المستخدم رقم 1"،
+// فذلك كان يجعل أي زائر غير مسجّل يُعامَل ضمنياً كأنه المستخدم صاحب المعرّف 1 دون أي إشارة لذلك.
 export function getCurrentUserId() {
-  return getStoredUser()?.id || 1;
+  return getStoredUser()?.id ?? null;
 }
 
 // ==========================================

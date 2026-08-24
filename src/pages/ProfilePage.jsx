@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Camera } from 'lucide-react';
+import { Camera, LogIn, WifiOff } from 'lucide-react';
 import api, { getStoredUser, saveStoredUser, getCurrentUserId } from '../services/api';
 import { resolveMediaUrl } from '../utils/constants';
 import PageShell from '@/components/ui/page-shell';
@@ -9,12 +9,20 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import EmptyState from '@/components/ui/empty-state';
 
 const ROLE_LABELS = {
   ROLE_ADMIN: 'مشرف النظام',
   ROLE_TEACHER: 'معلّم',
   ROLE_STUDENT: 'طالب',
 };
+
+// جلسة غير صالحة (403/404 من الخادم) تعني أن الحساب المخزّن محلياً لم يعد
+// موجوداً — لا فائدة من "إعادة المحاولة"، يجب تسجيل الدخول من جديد.
+function clearSessionAndGoToLogin() {
+  localStorage.clear();
+  window.location.href = '/login';
+}
 
 /**
  * Follows the Aduca template's profile-page anatomy — a large avatar + name
@@ -30,14 +38,23 @@ export default function ProfilePage() {
     email: storedUser?.email || '',
     password: '',
   });
-  const [status, setStatus] = useState('idle'); // idle | saving | saved | error
-  const [avatarStatus, setAvatarStatus] = useState('idle'); // idle | uploading | error
+  // loading | ready | invalid-session | offline
+  const [pageStatus, setPageStatus] = useState('loading');
+  const [status, setStatus] = useState('idle'); // idle | saving | saved | error | invalid-session
+  const [avatarStatus, setAvatarStatus] = useState('idle'); // idle | uploading | error | invalid-session
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
+    const userId = getCurrentUserId();
+
+    if (!userId) {
+      Promise.resolve().then(() => setPageStatus('invalid-session'));
+      return;
+    }
+
     api
-      .get('/users/' + getCurrentUserId())
+      .get('/users/' + userId)
       .then((response) => {
         if (isMounted) {
           saveStoredUser(response.data);
@@ -47,9 +64,14 @@ export default function ProfilePage() {
             email: response.data.email || '',
             password: '',
           });
+          setPageStatus('ready');
         }
       })
-      .catch((err) => console.warn('Could not fetch latest user profile info from backend.', err));
+      .catch((err) => {
+        console.warn('Could not fetch latest user profile info from backend.', err);
+        if (!isMounted) return;
+        setPageStatus(err.response?.status === 404 ? 'invalid-session' : 'offline');
+      });
     return () => {
       isMounted = false;
     };
@@ -69,7 +91,7 @@ export default function ProfilePage() {
       setStatus('saved');
     } catch (err) {
       console.warn('Update profile API request failed.', err);
-      setStatus('error');
+      setStatus(err.response?.status === 404 ? 'invalid-session' : 'error');
     }
   }
 
@@ -88,8 +110,50 @@ export default function ProfilePage() {
       setAvatarStatus('idle');
     } catch (err) {
       console.warn('Failed to upload avatar.', err);
-      setAvatarStatus('error');
+      setAvatarStatus(err.response?.status === 404 ? 'invalid-session' : 'error');
     }
+  }
+
+  if (pageStatus === 'loading') {
+    return (
+      <PageShell>
+        <div className="h-40 animate-pulse rounded-lg bg-surface-raised" />
+      </PageShell>
+    );
+  }
+
+  if (pageStatus === 'invalid-session') {
+    return (
+      <PageShell>
+        <EmptyState
+          icon={LogIn}
+          title="انتهت صلاحية الجلسة"
+          description="لم يعد هذا الحساب موجوداً على الخادم. سجّل الدخول من جديد للمتابعة."
+          action={
+            <Button onClick={clearSessionAndGoToLogin} className="mt-1">
+              تسجيل الدخول من جديد
+            </Button>
+          }
+        />
+      </PageShell>
+    );
+  }
+
+  if (pageStatus === 'offline') {
+    return (
+      <PageShell>
+        <EmptyState
+          icon={WifiOff}
+          title="تعذّر الاتصال بالخادم"
+          description="تأكد من تشغيل الخادم الخلفي (Spring Boot) ثم أعد تحميل الصفحة."
+          action={
+            <Button onClick={() => window.location.reload()} variant="outline" className="mt-1">
+              إعادة المحاولة
+            </Button>
+          }
+        />
+      </PageShell>
+    );
   }
 
   const roleName = String(user?.role?.name || '').toUpperCase();
@@ -124,7 +188,12 @@ export default function ProfilePage() {
             <span className="text-sm text-muted-foreground">{user?.email}</span>
           </div>
           {avatarStatus === 'uploading' && <p className="mt-1.5 text-xs text-muted-foreground">جاري رفع الصورة...</p>}
-          {avatarStatus === 'error' && <p className="mt-1.5 text-xs text-error">تعذّر رفع الصورة، حاول مرة أخرى.</p>}
+          {avatarStatus === 'error' && <p className="mt-1.5 text-xs text-error">تعذّر رفع الصورة، تحقق من اتصال الخادم وحاول مرة أخرى.</p>}
+          {avatarStatus === 'invalid-session' && (
+            <button type="button" onClick={clearSessionAndGoToLogin} className="mt-1.5 text-xs font-medium text-error underline">
+              انتهت صلاحية الجلسة — سجّل الدخول من جديد
+            </button>
+          )}
         </div>
       </div>
 
@@ -167,7 +236,17 @@ export default function ProfilePage() {
           )}
           {status === 'error' && (
             <Alert variant="destructive" className="mt-5">
-              <AlertDescription>تعذّر حفظ التغييرات. يرجى المحاولة مرة أخرى.</AlertDescription>
+              <AlertDescription>تعذّر حفظ التغييرات. تحقق من اتصال الخادم وحاول مرة أخرى.</AlertDescription>
+            </Alert>
+          )}
+          {status === 'invalid-session' && (
+            <Alert variant="destructive" className="mt-5">
+              <AlertDescription>
+                انتهت صلاحية الجلسة — لم يعد هذا الحساب موجوداً.{' '}
+                <button type="button" onClick={clearSessionAndGoToLogin} className="font-semibold underline">
+                  سجّل الدخول من جديد
+                </button>
+              </AlertDescription>
             </Alert>
           )}
 
