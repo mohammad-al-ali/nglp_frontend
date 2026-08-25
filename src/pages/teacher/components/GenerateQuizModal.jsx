@@ -84,11 +84,14 @@ export default function GenerateQuizModal({ lessonId, teacherId, onClose, onGene
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="size-5 text-primary" />
-            توليد كويز بالذكاء الاصطناعي
+            توليد كويز تلقائي
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
+          <p className="-mt-1 text-sm text-muted-foreground">
+            سيتم توليد الأسئلة بناءً على محتوى الدرس الحالي فقط.
+          </p>
           <FormField label="عنوان الكويز" htmlFor="quiz-title">
             <Input id="quiz-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="مثال: اختبار الدرس الأول" />
           </FormField>
@@ -101,7 +104,7 @@ export default function GenerateQuizModal({ lessonId, teacherId, onClose, onGene
             />
           </FormField>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="مزوّد الذكاء الاصطناعي" htmlFor="quiz-provider">
+            <FormField label="المزوّد" htmlFor="quiz-provider">
               <Select id="quiz-provider" value={providerKey} onChange={handleProviderChange}>
                 {providers.map((p) => (
                   <option key={p.key} value={p.key}>

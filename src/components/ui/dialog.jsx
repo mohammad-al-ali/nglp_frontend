@@ -26,7 +26,11 @@ const DialogContent = React.forwardRef(({ className, children, ...props }, ref) 
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed start-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border bg-surface p-6 shadow-soft-lg outline-none',
+        // "left" على عمد وليس "start": مع RTL يحوّل المتصفح start:50% إلى
+        // right:50%، وبما أن translate-x فيزيائي دائماً (لا يعكسه dir)، كان
+        // العنصر ينزاح 50% إضافية نحو اليسار بدل التمركز. left+translateX(-50%)
+        // ثنائي فيزيائي متجانس يتمركز بشكل صحيح بغض النظر عن الاتجاه.
+        'fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border bg-surface p-6 shadow-soft-lg outline-none',
         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
         className
       )}
