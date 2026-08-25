@@ -30,7 +30,7 @@ export default function QuizManager() {
         actions={
           <Button onClick={() => setShowGenerate(true)}>
             <Sparkles className="size-4" />
-            توليد كويز تلقائي
+            توليد اختبار
           </Button>
         }
       />
@@ -56,7 +56,7 @@ export default function QuizManager() {
         <EmptyState
           icon={FileQuestion}
           title="لا توجد اختبارات بعد"
-          description={'استخدم "توليد كويز تلقائي" لإنشاء أول اختبار لهذا الدرس.'}
+          description={'استخدم "توليد اختبار" لإنشاء أول اختبار لهذا الدرس.'}
         />
       ) : (
         <div className="flex flex-col gap-3">

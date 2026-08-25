@@ -84,7 +84,7 @@ export default function GenerateQuizModal({ lessonId, teacherId, onClose, onGene
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="size-5 text-primary" />
-            توليد كويز تلقائي
+            توليد اختبار
           </DialogTitle>
         </DialogHeader>
 
