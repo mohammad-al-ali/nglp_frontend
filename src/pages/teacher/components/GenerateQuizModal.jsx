@@ -53,7 +53,7 @@ export default function GenerateQuizModal({ lessonId, teacherId, onClose, onGene
 
   async function handleGenerate() {
     if (!title.trim()) {
-      setError('يرجى إدخال عنوان الكويز');
+      setError('يرجى إدخال عنوان الاختبار');
       return;
     }
     if (numberOfQuestions < 1 || numberOfQuestions > 20) {
@@ -92,7 +92,7 @@ export default function GenerateQuizModal({ lessonId, teacherId, onClose, onGene
           <p className="-mt-1 text-sm text-muted-foreground">
             سيتم توليد الأسئلة بناءً على محتوى الدرس الحالي فقط.
           </p>
-          <FormField label="عنوان الكويز" htmlFor="quiz-title">
+          <FormField label="عنوان الاختبار" htmlFor="quiz-title">
             <Input id="quiz-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="مثال: اختبار الدرس الأول" />
           </FormField>
           <FormField label="عدد الأسئلة" htmlFor="quiz-question-count">
