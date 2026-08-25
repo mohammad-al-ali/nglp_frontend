@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, ArrowRight, ArrowLeft, Send, AlertCircle, FileQuestion } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, ArrowLeft, Send, AlertCircle, FileQuestion, Lightbulb } from 'lucide-react';
 import PageShell from '@/components/ui/page-shell';
 import PageHeader from '@/components/ui/page-header';
 import { Card } from '@/components/ui/card';
@@ -9,16 +9,20 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import EmptyState from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
-import { useFetchQuizStudent, useStartAttempt, useSubmitAttempt } from '../../hooks/useQuiz';
+import { useFetchQuizStudent, useCheckAnswer, useStartAttempt, useSubmitAttempt } from '../../hooks/useQuiz';
+
+const CHOICE_LETTERS = ['أ', 'ب', 'ج', 'د'];
 
 export default function QuizTaker() {
   const navigate = useNavigate();
   const { quizId } = useParams();
   const { quiz, loading, error, fetchQuiz } = useFetchQuizStudent();
   const { startAttempt } = useStartAttempt();
+  const { checkAnswer, loading: checking } = useCheckAnswer();
   const { submitAttempt, loading: submitting } = useSubmitAttempt();
   const [attempt, setAttempt] = useState(null);
   const [answers, setAnswers] = useState({});
+  const [checkedResults, setCheckedResults] = useState({});
   const [result, setResult] = useState(null);
   const [localError, setLocalError] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -33,15 +37,34 @@ export default function QuizTaker() {
       const att = await startAttempt(quizId);
       setAttempt(att);
       setAnswers({});
+      setCheckedResults({});
+      setResult(null);
       setCurrentIndex(0);
     } catch (e) {
       setLocalError(e.message || 'فشل بدء المحاولة');
     }
   }
 
+  async function handleSelectChoice(question, choice) {
+    if (checkedResults[question.id] || checking) return;
+
+    setAnswers((prev) => ({ ...prev, [question.id]: choice.id }));
+    try {
+      setLocalError('');
+      const res = await checkAnswer(question.id, choice.id);
+      setCheckedResults((prev) => ({ ...prev, [question.id]: res }));
+    } catch (e) {
+      setLocalError(e.message || 'تعذر التحقق من الإجابة');
+      setAnswers((prev) => {
+        const next = { ...prev };
+        delete next[question.id];
+        return next;
+      });
+    }
+  }
+
   async function handleSubmit() {
-    const quizData = result || quiz;
-    const unanswered = (quizData?.questions || []).filter((q) => !answers[q.id]);
+    const unanswered = questions.filter((qq) => !answers[qq.id]);
     if (unanswered.length > 0) {
       setLocalError('يرجى الإجابة على جميع الأسئلة قبل التسليم');
       return;
@@ -59,19 +82,14 @@ export default function QuizTaker() {
     }
   }
 
-  function setAnswer(questionId, choiceId) {
-    setAnswers((prev) => ({ ...prev, [questionId]: choiceId }));
-  }
-
-  const q = result || quiz;
-  const questions = q?.questions || [];
+  const questions = quiz?.questions || [];
   const totalQuestions = questions.length;
   const showAnswers = result?.showAnswersAfterSubmit ?? quiz?.showAnswersAfterSubmit ?? true;
 
   if (loading) {
     return (
       <PageShell>
-        <PageHeader title="جاري تحميل الكويز..." />
+        <PageHeader title="جاري تحميل الاختبار..." />
         <div className="flex flex-col gap-4">
           {[1, 2, 3].map((n) => (
             <div key={n} className="h-40 animate-pulse rounded-lg bg-surface-raised" />
@@ -85,25 +103,25 @@ export default function QuizTaker() {
     return (
       <PageShell>
         <PageHeader title="خطأ" />
-        <EmptyState icon={AlertCircle} title="تعذر تحميل الكويز" description={error} />
+        <EmptyState icon={AlertCircle} title="تعذر تحميل الاختبار" description={error} />
       </PageShell>
     );
   }
 
-  if (!q) return null;
+  if (!quiz) return null;
 
   // ============================================================
   // RESULT VIEW
   // ============================================================
   if (result) {
-    const totalWeight = q.answers?.reduce((s, a) => s + (a.pointsAwarded || 0), 0) || 0;
-    const maxWeight = q.questions?.reduce((s, qq) => s + (qq.difficultyWeight || 5), 0) || 0;
+    const totalWeight = result.answers?.reduce((s, a) => s + (a.pointsAwarded || 0), 0) || 0;
+    const maxWeight = questions.reduce((s, qq) => s + (qq.difficultyWeight || 5), 0) || 0;
     const pct = maxWeight > 0 ? Math.round((totalWeight / maxWeight) * 100) : 0;
     const tone = pct >= 70 ? 'success' : pct >= 40 ? 'warning' : 'error';
 
     return (
       <PageShell>
-        <PageHeader eyebrow="النتيجة" title={q.title || 'النتيجة'} />
+        <PageHeader eyebrow="النتيجة" title={quiz.title || 'النتيجة'} />
 
         <Card
           className={cn(
@@ -123,7 +141,7 @@ export default function QuizTaker() {
         </Card>
 
         <div className="flex flex-col gap-4">
-          {q.answers?.map((answer, idx) => {
+          {result.answers?.map((answer, idx) => {
             const qq = questions[idx];
             const selectedChoice = qq?.choices?.find((c) => c.id === answer.selectedChoiceId);
 
@@ -136,7 +154,7 @@ export default function QuizTaker() {
                       answer.isCorrect ? 'border-success-border bg-success-soft text-success' : 'border-error-border bg-error-soft text-error'
                     )}
                   >
-                    {answer.isCorrect ? <CheckCircle className="size-4" /> : <XCircle className="size-4" />}
+                    {answer.isCorrect ? <CheckCircle2 className="size-4" /> : <XCircle className="size-4" />}
                   </span>
                   <p className="text-sm font-semibold text-foreground">{qq?.questionText || 'سؤال'}</p>
                 </div>
@@ -195,14 +213,14 @@ export default function QuizTaker() {
   if (!attempt) {
     return (
       <PageShell>
-        <PageHeader eyebrow="كويز" title={quiz?.title || 'كويز'} />
+        <PageHeader eyebrow="اختبار" title={quiz.title || 'اختبار'} />
         <EmptyState
           icon={FileQuestion}
-          title={quiz?.title}
+          title={quiz.title}
           description={`${totalQuestions} أسئلة`}
           action={
             <Button size="lg" onClick={handleStart} className="mt-1">
-              بدء الكويز
+              بدء الاختبار
             </Button>
           }
         />
@@ -211,20 +229,23 @@ export default function QuizTaker() {
   }
 
   // ============================================================
-  // IN-PROGRESS (Solving)
+  // IN-PROGRESS (Solving, one question at a time with instant feedback)
   // ============================================================
   const currentQuestion = questions[currentIndex];
-  const answeredCount = Object.keys(answers).length;
+  const answeredCount = Object.keys(checkedResults).length;
   const progressPct = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
+  const currentChecked = currentQuestion ? checkedResults[currentQuestion.id] : null;
+  const currentSelectedChoiceId = currentQuestion ? answers[currentQuestion.id] : null;
+  const isLastQuestion = currentIndex === totalQuestions - 1;
 
   return (
     <PageShell>
-      <PageHeader eyebrow="كويز" title={quiz?.title || 'كويز'} />
+      <PageHeader eyebrow="اختبار" title={quiz.title || 'اختبار'} />
 
-      <div className="mb-5">
+      <div className="mb-6">
         <div className="mb-1.5 flex justify-between text-sm text-muted-foreground">
           <span>{answeredCount} من {totalQuestions} تمت الإجابة</span>
-          <span>{currentIndex + 1} / {totalQuestions}</span>
+          <span>السؤال {currentIndex + 1} / {totalQuestions}</span>
         </div>
         <Progress value={progressPct} />
       </div>
@@ -236,38 +257,71 @@ export default function QuizTaker() {
       )}
 
       {currentQuestion && (
-        <Card className="p-6">
-          <div className="mb-4 flex items-center gap-2.5">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-              {currentIndex + 1}
-            </span>
-            <h3 className="text-base font-semibold text-foreground">{currentQuestion.questionText}</h3>
-          </div>
+        <Card className="p-6 sm:p-8">
+          <h3 className="mb-6 text-lg font-bold leading-relaxed text-foreground">{currentQuestion.questionText}</h3>
 
-          <div className="flex flex-col gap-2.5">
-            {currentQuestion.choices.map((choice) => {
-              const isSelected = answers[currentQuestion.id] === choice.id;
+          <div className="flex flex-col gap-3">
+            {currentQuestion.choices.map((choice, choiceIdx) => {
+              const isSelected = currentSelectedChoiceId === choice.id;
+              const isAnswered = Boolean(currentChecked);
+              const isCorrectChoice = currentChecked && choice.id === currentChecked.correctChoiceId;
+              const revealCorrect = isSelected && currentChecked?.isCorrect;
+              const revealWrong = isSelected && currentChecked && !currentChecked.isCorrect;
+              const revealMissedCorrect = !isSelected && isCorrectChoice;
+
               return (
                 <button
                   key={choice.id}
                   type="button"
-                  onClick={() => setAnswer(currentQuestion.id, choice.id)}
+                  disabled={isAnswered || checking}
+                  onClick={() => handleSelectChoice(currentQuestion, choice)}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-md border px-4 py-3.5 text-start text-sm transition-all duration-200 ease-in-out',
-                    isSelected ? 'border-2 border-primary bg-primary-soft text-foreground' : 'border-border text-foreground hover:bg-surface-raised'
+                    'flex w-full items-center gap-3.5 rounded-xl border-2 px-4 py-4 text-start text-sm transition-all duration-200 ease-in-out',
+                    !isAnswered && 'border-border text-foreground hover:border-primary-border hover:bg-primary-soft/40',
+                    isAnswered && !isSelected && !revealMissedCorrect && 'border-border text-muted-foreground opacity-60',
+                    revealCorrect && 'border-success bg-success-soft text-success',
+                    revealWrong && 'border-error bg-error-soft text-error',
+                    revealMissedCorrect && 'border-success bg-success-soft/60 text-success',
+                    checking && !isSelected && 'opacity-60'
                   )}
                 >
                   <span
                     className={cn(
-                      'flex size-[22px] shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ease-in-out',
-                      isSelected ? 'border-[6px] border-primary' : 'border-border'
+                      'flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-200 ease-in-out',
+                      !isAnswered && 'border-border text-muted-foreground',
+                      isAnswered && !isSelected && !revealMissedCorrect && 'border-border text-muted-foreground',
+                      revealCorrect && 'border-success bg-success text-white',
+                      revealWrong && 'border-error bg-error text-white',
+                      revealMissedCorrect && 'border-success bg-success text-white'
                     )}
-                  />
-                  {choice.choiceText}
+                  >
+                    {revealCorrect || revealMissedCorrect ? <CheckCircle2 className="size-4" /> : revealWrong ? <XCircle className="size-4" /> : CHOICE_LETTERS[choiceIdx] || choiceIdx + 1}
+                  </span>
+                  <span className="flex-1">{choice.choiceText}</span>
                 </button>
               );
             })}
           </div>
+
+          {currentChecked && (
+            <div
+              className={cn(
+                'mt-5 flex items-start gap-2.5 rounded-lg border px-4 py-3.5 text-sm',
+                currentChecked.isCorrect ? 'border-success-border bg-success-soft text-success' : 'border-error-border bg-error-soft text-error'
+              )}
+            >
+              {currentChecked.isCorrect ? <CheckCircle2 className="mt-0.5 size-4 shrink-0" /> : <XCircle className="mt-0.5 size-4 shrink-0" />}
+              <div>
+                <p className="font-bold">{currentChecked.isCorrect ? 'إجابة صحيحة!' : 'إجابة غير صحيحة'}</p>
+                {currentChecked.explanation && (
+                  <p className="mt-1.5 flex items-start gap-1.5 font-normal text-foreground">
+                    <Lightbulb className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                    {currentChecked.explanation}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </Card>
       )}
 
@@ -278,16 +332,16 @@ export default function QuizTaker() {
             السابق
           </Button>
         )}
-        {currentIndex < totalQuestions - 1 && (
-          <Button className="ms-auto" onClick={() => setCurrentIndex((i) => i + 1)}>
+        {!isLastQuestion && (
+          <Button className="ms-auto" disabled={!currentChecked} onClick={() => setCurrentIndex((i) => i + 1)}>
             التالي
             <ArrowLeft className="size-4" />
           </Button>
         )}
-        {currentIndex === totalQuestions - 1 && (
-          <Button className="ms-auto bg-success hover:bg-success/90" disabled={submitting} onClick={handleSubmit}>
+        {isLastQuestion && (
+          <Button className="ms-auto bg-success hover:bg-success/90" disabled={!currentChecked || submitting} onClick={handleSubmit}>
             <Send className="size-4" />
-            {submitting ? 'جاري التسليم...' : 'تسليم الإجابات'}
+            {submitting ? 'جاري التسليم...' : 'إنهاء الاختبار'}
           </Button>
         )}
       </div>

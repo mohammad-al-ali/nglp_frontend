@@ -173,6 +173,28 @@ export function useDeleteQuestion() {
   return { deleteQuestion, loading };
 }
 
+export function useCheckAnswer() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const checkAnswer = useCallback(async (questionId, choiceId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await api.get(`/quizzes/questions/${questionId}/choices/${choiceId}/check`);
+      return res.data;
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message || 'Failed to check answer';
+      setError(msg);
+      throw new Error(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { checkAnswer, loading, error };
+}
+
 export function useStartAttempt() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
