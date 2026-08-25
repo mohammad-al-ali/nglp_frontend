@@ -108,7 +108,7 @@ export default function QuizEditor() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="مراجعة الكويز"
+        eyebrow="مراجعة الاختبار"
         title={q.title}
         actions={
           <div className="flex items-center gap-2">
