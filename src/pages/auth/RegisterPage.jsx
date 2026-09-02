@@ -2,31 +2,53 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api, { saveStoredUser } from '../../services/api';
 import { isTeacher } from '@/lib/roles';
+import { useForm } from '@/hooks/useForm';
+import {
+  required,
+  email as emailRule,
+  password as passwordRule,
+  match,
+  fileType,
+  fileMaxSizeMB,
+} from '@/lib/validation';
+import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import FormField from '@/components/ui/form-field';
 import ImagePicker from '@/components/ui/ImagePicker';
+
+const schema = {
+  fullName: [required('الاسم الكامل')],
+  email: [required('البريد الإلكتروني'), emailRule()],
+  password: [required('كلمة المرور'), passwordRule()],
+  confirmPassword: [
+    required(null, 'يرجى تأكيد كلمة المرور.'),
+    match('password', 'كلمتا المرور غير متطابقتين.'),
+  ],
+  roleId: [required(null, 'يرجى اختيار نوع الحساب.')],
+  avatar: [
+    fileType(
+      { mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], extensions: ['.jpg', '.jpeg', '.png', '.webp', '.gif'] },
+      'صيغة الصورة غير مدعومة. الصيغ المسموحة: JPG، PNG، WEBP، GIF.'
+    ),
+    fileMaxSizeMB(5, 'حجم الصورة يتجاوز 5 ميغابايت.'),
+  ],
+};
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [roles, setRoles] = useState([]);
-  const [form, setForm] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    roleId: '',
-  });
-  const [avatarFile, setAvatarFile] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [status, setStatus] = useState('idle'); // idle | submitting | error
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { values, errors, setValue, setValuesBulk, handleBlur, validateAll, setServerErrors } = useForm(
+    { fullName: '', email: '', password: '', confirmPassword: '', roleId: '', avatar: null },
+    schema
+  );
 
   useEffect(() => {
     let isMounted = true;
-
     async function loadRoles() {
       try {
         const response = await api.get('/roles');
@@ -34,68 +56,52 @@ export default function RegisterPage() {
         if (isMounted) {
           setRoles(studentTeacherRoles);
           if (studentTeacherRoles.length > 0) {
-            setForm((current) => ({ ...current, roleId: String(studentTeacherRoles[0]?.id || '') }));
+            setValuesBulk({ roleId: String(studentTeacherRoles[0]?.id || '') });
           }
         }
-      } catch (err) {
-        console.warn('Failed to load user roles from backend.', err);
+      } catch {
         if (isMounted) setRoles([]);
       }
     }
-
     loadRoles();
     return () => {
       isMounted = false;
     };
-  }, []);
-
-  function validate() {
-    const nextErrors = {};
-    if (!form.fullName.trim()) nextErrors.fullName = 'الاسم مطلوب.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      nextErrors.email = 'أدخل بريداً إلكترونياً صحيحاً.';
-    }
-    if (form.password.length < 6) {
-      nextErrors.password = 'يجب أن تكون كلمة المرور 6 أحرف على الأقل.';
-    }
-    if (form.password !== form.confirmPassword) {
-      nextErrors.confirmPassword = 'كلمتا المرور غير متطابقتين.';
-    }
-    return nextErrors;
-  }
+  }, [setValuesBulk]);
 
   async function submitForm(event) {
     event.preventDefault();
-    const nextErrors = validate();
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (!validateAll()) return;
 
-    setStatus('submitting');
+    setIsSubmitting(true);
     try {
       const response = await api.post('/auth/register', {
-        fullName: form.fullName,
-        email: form.email,
-        password: form.password,
-        role: form.roleId ? { id: Number(form.roleId) } : undefined,
+        fullName: values.fullName.trim(),
+        email: values.email.trim(),
+        password: values.password,
+        roleId: values.roleId ? Number(values.roleId) : null,
       });
       const user = response.data.user || response.data;
       saveStoredUser(user);
 
-      if (avatarFile && user?.id) {
+      if (values.avatar && user?.id) {
         const formData = new FormData();
-        formData.append('image', avatarFile);
+        formData.append('image', values.avatar);
         try {
           const avatarResponse = await api.post(`/users/${user.id}/image`, formData);
           saveStoredUser(avatarResponse.data);
-        } catch (avatarErr) {
-          console.warn('Failed to upload avatar.', avatarErr);
+        } catch {
+          notify.warning('تم إنشاء الحساب، لكن تعذّر رفع الصورة الشخصية.');
         }
       }
 
+      notify.success(SUCCESS.REGISTER);
       navigate(isTeacher(user) ? '/teacher' : '/dashboard');
     } catch (err) {
-      console.error('Registration failed.', err);
-      setStatus('error');
+      setServerErrors(err.fieldErrors);
+      notify.error(err.friendlyMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -112,8 +118,9 @@ export default function RegisterPage() {
           <FormField label="الاسم الكامل" error={errors.fullName} htmlFor="reg-name">
             <Input
               id="reg-name"
-              value={form.fullName}
-              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+              value={values.fullName}
+              onChange={(e) => setValue('fullName', e.target.value)}
+              onBlur={() => handleBlur('fullName')}
               placeholder="محمد أحمد"
               aria-invalid={Boolean(errors.fullName)}
             />
@@ -123,19 +130,26 @@ export default function RegisterPage() {
             <Input
               id="reg-email"
               type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              value={values.email}
+              onChange={(e) => setValue('email', e.target.value)}
+              onBlur={() => handleBlur('email')}
               placeholder="name@example.com"
               aria-invalid={Boolean(errors.email)}
             />
           </FormField>
 
-          <FormField label="كلمة المرور" error={errors.password} htmlFor="reg-password" hint={!errors.password ? '6 أحرف على الأقل' : undefined}>
+          <FormField
+            label="كلمة المرور"
+            error={errors.password}
+            htmlFor="reg-password"
+            hint={!errors.password ? '6 أحرف على الأقل' : undefined}
+          >
             <Input
               id="reg-password"
               type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              value={values.password}
+              onChange={(e) => setValue('password', e.target.value)}
+              onBlur={() => handleBlur('password')}
               placeholder="••••••••"
               aria-invalid={Boolean(errors.password)}
             />
@@ -145,18 +159,19 @@ export default function RegisterPage() {
             <Input
               id="reg-confirm"
               type="password"
-              value={form.confirmPassword}
-              onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+              value={values.confirmPassword}
+              onChange={(e) => setValue('confirmPassword', e.target.value)}
+              onBlur={() => handleBlur('confirmPassword')}
               placeholder="••••••••"
               aria-invalid={Boolean(errors.confirmPassword)}
             />
           </FormField>
 
-          <FormField label="نوع الحساب" htmlFor="reg-role">
+          <FormField label="نوع الحساب" error={errors.roleId} htmlFor="reg-role">
             <Select
               id="reg-role"
-              value={form.roleId}
-              onChange={(e) => setForm({ ...form, roleId: e.target.value })}
+              value={values.roleId}
+              onChange={(e) => setValue('roleId', e.target.value)}
             >
               {roles.length > 0 ? (
                 roles.map((role) => (
@@ -173,20 +188,16 @@ export default function RegisterPage() {
             </Select>
           </FormField>
 
-          <ImagePicker
-            label="صورة شخصية (اختياري)"
-            hint="تظهر بجانب اسمك في القائمة الجانبية."
-            onChange={setAvatarFile}
-          />
+          <FormField error={errors.avatar}>
+            <ImagePicker
+              label="صورة شخصية (اختياري)"
+              hint="تظهر بجانب اسمك في القائمة الجانبية."
+              onChange={(file) => setValue('avatar', file)}
+            />
+          </FormField>
 
-          {status === 'error' && (
-            <Alert variant="destructive">
-              <AlertDescription>تعذّر إنشاء الحساب. تحقق من البيانات المدخلة أو حاول مرة أخرى لاحقاً.</AlertDescription>
-            </Alert>
-          )}
-
-          <Button type="submit" disabled={status === 'submitting'} className="mt-2">
-            {status === 'submitting' ? 'جاري إنشاء الحساب...' : 'إنشاء حساب'}
+          <Button type="submit" disabled={isSubmitting} className="mt-2">
+            {isSubmitting ? 'جاري إنشاء الحساب...' : 'إنشاء حساب'}
           </Button>
         </form>
 

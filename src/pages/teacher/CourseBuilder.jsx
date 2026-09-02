@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import FormField from '@/components/ui/form-field';
 import StepHeader from '@/components/ui/step-header';
 import FileDropzone from '@/components/ui/file-dropzone';
@@ -16,6 +15,8 @@ import UploadQueueItem from '@/components/ui/upload-queue-item';
 import ImagePicker from '@/components/ui/ImagePicker';
 import { useUploadQueue } from '../../hooks/useUploadQueue';
 import { categories as defaultCategories, normalizeCategory, normalizeCourse } from '../../utils/constants';
+import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
 
 export default function CourseBuilder() {
   const [categories, setCategories] = useState(defaultCategories);
@@ -61,22 +62,27 @@ export default function CourseBuilder() {
   }, []);
 
   function handleFiles(fileList) {
-    Array.from(fileList)
-      .filter((file) => file.type === 'video/mp4' || file.name.endsWith('.mp4'))
-      .forEach((file) => {
-        queueLesson({
-          file,
-          title: lessonTitle.trim() || file.name.replace(/\.mp4$/i, ''),
-          description: lessonDescription.trim(),
-        });
+    const all = Array.from(fileList);
+    const accepted = all.filter((file) => file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4'));
+    accepted.forEach((file) => {
+      queueLesson({
+        file,
+        title: lessonTitle.trim() || file.name.replace(/\.mp4$/i, ''),
+        description: lessonDescription.trim(),
       });
+    });
+    if (accepted.length < all.length) {
+      notify.warning('تم تجاهل بعض الملفات — يُقبل فيديو بصيغة MP4 فقط.');
+    }
     setLessonTitle('');
     setLessonDescription('');
   }
 
   async function handleFinalSubmit() {
-    if (!courseInfo.title.trim()) {
-      setTitleError('يرجى إدخال عنوان الكورس أولاً.');
+    const title = courseInfo.title.trim();
+    if (title.length < 3) {
+      setTitleError('عنوان الكورس مطلوب (3 أحرف على الأقل).');
+      notify.error('يرجى تصحيح الحقول المميّزة ثم إعادة المحاولة.');
       return;
     }
     setTitleError(null);
@@ -105,17 +111,21 @@ export default function CourseBuilder() {
       }
       setSavedCourse(normalizeCourse(savedCourseData));
     } catch (err) {
-      console.error('Failed to create course.', err);
       setSubmitStatus('error');
+      notify.error(err.friendlyMessage);
       return;
     }
 
     try {
-      await uploadAll(currentCourseId);
+      const uploaded = await uploadAll(currentCourseId);
       setSubmitStatus('done');
+      notify.success(SUCCESS.COURSE_CREATED);
+      if (uploaded && uploaded.length > 0) {
+        notify.success(SUCCESS.LESSONS_UPLOADED(uploaded.length));
+      }
     } catch (err) {
-      console.error('Some lessons failed to upload.', err);
       setSubmitStatus('error');
+      notify.error(err.friendlyMessage || 'تم إنشاء الكورس لكن تعذّر رفع بعض الدروس.');
     }
   }
 
@@ -222,14 +232,9 @@ export default function CourseBuilder() {
         </Button>
 
         {submitStatus === 'done' && savedCourse && (
-          <Alert variant="success" className="w-full max-w-md">
-            <AlertDescription>تم نشر المنهج الدراسي "{savedCourse.title}" وحفظ الدروس بنجاح.</AlertDescription>
-          </Alert>
-        )}
-        {submitStatus === 'error' && (
-          <Alert variant="destructive" className="w-full max-w-md">
-            <AlertDescription>تعذّر حفظ الكورس أو رفع بعض الدروس. تحقق من الاتصال بالخادم وحاول مرة أخرى.</AlertDescription>
-          </Alert>
+          <p className="text-sm font-medium text-success">
+            تم نشر المنهج الدراسي «{savedCourse.title}» وحفظ الدروس بنجاح.
+          </p>
         )}
       </Card>
     </PageShell>

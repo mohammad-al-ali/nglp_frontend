@@ -1,5 +1,24 @@
 import { useState } from 'react';
 import api from '../services/api';
+import { notify } from '@/lib/toast';
+
+const MAX_VIDEO_MB = 500;
+const ALLOWED_VIDEO_EXT = ['.mp4', '.webm', '.mov', '.m4v'];
+
+/** تحقق جهة العميل من ملف فيديو الدرس قبل الرفع. يُعيد رسالة خطأ عربية أو null. */
+export function validateLessonFile(file) {
+  if (!(file instanceof File)) return 'يرجى إرفاق ملف فيديو للدرس.';
+  const name = file.name.toLowerCase();
+  const extOk = ALLOWED_VIDEO_EXT.some((e) => name.endsWith(e));
+  const typeOk = !file.type || file.type.startsWith('video/');
+  if (!extOk || !typeOk) {
+    return 'صيغة الفيديو غير مدعومة. الصيغ المسموحة: MP4، WEBM، MOV.';
+  }
+  if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
+    return `حجم الفيديو يتجاوز الحد المسموح (${MAX_VIDEO_MB} ميغابايت).`;
+  }
+  return null;
+}
 
 /**
  * Shared lesson-upload queue for CourseBuilder and ManageLessons — the
@@ -14,6 +33,11 @@ export function useUploadQueue() {
   const [queue, setQueue] = useState([]);
 
   function queueLesson({ file, title, description }) {
+    const validationError = validateLessonFile(file);
+    if (validationError) {
+      notify.error(validationError);
+      return;
+    }
     const id = crypto.randomUUID();
     setQueue((current) => [
       ...current,
@@ -61,7 +85,7 @@ export function useUploadQueue() {
         updateItem(item.id, { progress: 100, status: 'completed' });
         uploaded.push(response.data);
       } catch (err) {
-        updateItem(item.id, { status: 'error' });
+        updateItem(item.id, { status: 'error', errorMessage: err.friendlyMessage });
         throw err;
       }
     }

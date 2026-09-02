@@ -14,7 +14,7 @@ export function useFetchQuizzes(lessonId) {
       const res = await api.get(`/quizzes?lessonId=${lessonId}`);
       setQuizzes(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to fetch quizzes');
+      setError(err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to fetch quizzes');
     } finally {
       setLoading(false);
     }
@@ -36,7 +36,7 @@ export function useFetchQuiz() {
       const res = await api.get(`/quizzes/${quizId}`);
       setQuiz(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to fetch quiz');
+      setError(err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to fetch quiz');
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ export function useFetchQuizStudent() {
       const res = await api.get(`/quizzes/${quizId}/student-view`);
       setQuiz(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to fetch quiz');
+      setError(err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to fetch quiz');
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ export function useGenerateQuiz() {
       const res = await api.post('/quizzes/generate', payload);
       return res.data;
     } catch (err) {
-      const msg = err.response?.data?.error || err.message || 'Failed to generate quiz';
+      const msg = err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to generate quiz';
       setError(msg);
       throw new Error(msg);
     } finally {
@@ -100,7 +100,7 @@ export function usePublishQuiz() {
       const res = await api.post(`/quizzes/${quizId}/publish`);
       return res.data;
     } catch (err) {
-      const msg = err.response?.data?.error || err.message || 'Failed to publish quiz';
+      const msg = err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to publish quiz';
       setError(msg);
       throw new Error(msg);
     } finally {
@@ -122,7 +122,7 @@ export function useAddQuestion() {
       const res = await api.post(`/quizzes/${quizId}/questions`, payload);
       return res.data;
     } catch (err) {
-      const msg = err.response?.data?.error || err.message || 'Failed to add question';
+      const msg = err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to add question';
       setError(msg);
       throw new Error(msg);
     } finally {
@@ -144,7 +144,7 @@ export function useUpdateQuestion() {
       const res = await api.put(`/quizzes/${quizId}/questions/${questionId}`, payload);
       return res.data;
     } catch (err) {
-      const msg = err.response?.data?.error || err.message || 'Failed to update question';
+      const msg = err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to update question';
       setError(msg);
       throw new Error(msg);
     } finally {
@@ -164,7 +164,7 @@ export function useDeleteQuestion() {
       await api.delete(`/quizzes/${quizId}/questions/${questionId}`);
       return true;
     } catch (err) {
-      throw new Error(err.response?.data?.error || err.message || 'Failed to delete question');
+      throw new Error(err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to delete question');
     } finally {
       setLoading(false);
     }
@@ -184,7 +184,7 @@ export function useCheckAnswer() {
       const res = await api.get(`/quizzes/questions/${questionId}/choices/${choiceId}/check`);
       return res.data;
     } catch (err) {
-      const msg = err.response?.data?.error || err.message || 'Failed to check answer';
+      const msg = err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to check answer';
       setError(msg);
       throw new Error(msg);
     } finally {
@@ -206,7 +206,7 @@ export function useStartAttempt() {
       const res = await api.post(`/quizzes/${quizId}/attempts?studentId=${getCurrentUserId()}`);
       return res.data;
     } catch (err) {
-      const msg = err.response?.data?.error || err.message || 'Failed to start attempt';
+      const msg = err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to start attempt';
       setError(msg);
       throw new Error(msg);
     } finally {
@@ -228,7 +228,7 @@ export function useSubmitAttempt() {
       const res = await api.post(`/quizzes/attempts/${attemptId}/submit`, { answers });
       return res.data;
     } catch (err) {
-      const msg = err.response?.data?.error || err.message || 'Failed to submit attempt';
+      const msg = err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to submit attempt';
       setError(msg);
       throw new Error(msg);
     } finally {
@@ -254,7 +254,7 @@ export function useFetchAttempts() {
       const res = await api.get(`/quizzes/attempts?${params.toString()}`);
       setAttempts(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to fetch attempts');
+      setError(err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to fetch attempts');
     } finally {
       setLoading(false);
     }
@@ -275,7 +275,7 @@ export function useFetchProviders() {
       const res = await api.get('/llm/providers');
       setProviders(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to fetch providers');
+      setError(err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to fetch providers');
     } finally {
       setLoading(false);
     }
@@ -297,7 +297,7 @@ export function useFetchUserSettings() {
       const res = await api.get(`/llm/users/${userId}/settings`);
       setSettings(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to fetch settings');
+      setError(err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to fetch settings');
     } finally {
       setLoading(false);
     }
@@ -317,7 +317,7 @@ export function useUpdateUserSettings() {
       await api.put(`/llm/users/${userId}/settings`, payload);
       return true;
     } catch (err) {
-      const msg = err.response?.data?.error || err.message || 'Failed to update settings';
+      const msg = err.friendlyMessage || err.response?.data?.message || err.response?.data?.error || 'Failed to update settings';
       setError(msg);
       throw new Error(msg);
     } finally {

@@ -13,6 +13,8 @@ import EmptyState from '@/components/ui/empty-state';
 import BackLink from '@/components/ui/back-link';
 import { cn } from '@/lib/utils';
 import { normalizeCourse, normalizeLesson } from '../utils/constants';
+import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
 
 function translateLevel(lvl) {
   if (!lvl) return 'جميع المستويات';
@@ -106,10 +108,11 @@ export default function CourseDetails() {
         params: { userId: Number(getCurrentUserId()), courseId: Number(courseId) },
       });
       setEnrollStatus('enrolled');
-      setTimeout(() => navigate('/dashboard'), 1000);
+      notify.success(SUCCESS.ENROLLED);
+      setTimeout(() => navigate('/dashboard'), 1200);
     } catch (err) {
-      console.error('Enrollment API request failed.', err);
       setEnrollStatus('error');
+      notify.error(err.friendlyMessage);
     }
   }
 

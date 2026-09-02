@@ -10,6 +10,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import EmptyState from '@/components/ui/empty-state';
+import { useForm } from '@/hooks/useForm';
+import { required, email as emailRule, password as passwordRule } from '@/lib/validation';
+import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
+
+const profileSchema = {
+  fullName: [required('الاسم الكامل')],
+  email: [required('البريد الإلكتروني'), emailRule()],
+  password: [passwordRule()], // اختيارية — قاعدة الطول تتجاهل القيمة الفارغة
+};
 
 const ROLE_LABELS = {
   ROLE_ADMIN: 'مشرف النظام',
@@ -33,14 +43,17 @@ function clearSessionAndGoToLogin() {
 export default function ProfilePage() {
   const storedUser = getStoredUser();
   const [user, setUser] = useState(storedUser);
-  const [form, setForm] = useState({
-    fullName: storedUser?.fullName || '',
-    email: storedUser?.email || '',
-    password: '',
-  });
+  const { values: form, errors, setValue, setValuesBulk, handleBlur, validateAll, setServerErrors } = useForm(
+    {
+      fullName: storedUser?.fullName || '',
+      email: storedUser?.email || '',
+      password: '',
+    },
+    profileSchema
+  );
   // loading | ready | invalid-session | offline
   const [pageStatus, setPageStatus] = useState('loading');
-  const [status, setStatus] = useState('idle'); // idle | saving | saved | error | invalid-session
+  const [status, setStatus] = useState('idle'); // idle | saving | invalid-session
   const [avatarStatus, setAvatarStatus] = useState('idle'); // idle | uploading | error | invalid-session
   const fileInputRef = useRef(null);
 
@@ -59,10 +72,9 @@ export default function ProfilePage() {
         if (isMounted) {
           saveStoredUser(response.data);
           setUser(response.data);
-          setForm({
+          setValuesBulk({
             fullName: response.data.fullName || '',
             email: response.data.email || '',
-            password: '',
           });
           setPageStatus('ready');
         }
@@ -75,23 +87,32 @@ export default function ProfilePage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [setValuesBulk]);
 
   async function submitForm(event) {
     event.preventDefault();
+    if (!validateAll()) return;
+
     setStatus('saving');
     try {
       const response = await api.put('/users/' + getCurrentUserId(), {
-        fullName: form.fullName,
-        email: form.email,
-        password: form.password,
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
+        password: form.password && form.password.trim() ? form.password : undefined,
       });
       saveStoredUser(response.data);
       setUser(response.data);
-      setStatus('saved');
+      setValuesBulk({ password: '' });
+      setStatus('idle');
+      notify.success(SUCCESS.PROFILE_SAVED);
     } catch (err) {
-      console.warn('Update profile API request failed.', err);
-      setStatus(err.response?.status === 404 ? 'invalid-session' : 'error');
+      if (err.response?.status === 404) {
+        setStatus('invalid-session');
+        return;
+      }
+      setStatus('idle');
+      setServerErrors(err.fieldErrors);
+      notify.error(err.friendlyMessage);
     }
   }
 
@@ -108,9 +129,14 @@ export default function ProfilePage() {
       saveStoredUser(response.data);
       setUser(response.data);
       setAvatarStatus('idle');
+      notify.success(SUCCESS.AVATAR_UPDATED);
     } catch (err) {
-      console.warn('Failed to upload avatar.', err);
-      setAvatarStatus(err.response?.status === 404 ? 'invalid-session' : 'error');
+      if (err.response?.status === 404) {
+        setAvatarStatus('invalid-session');
+        return;
+      }
+      setAvatarStatus('idle');
+      notify.error(err.friendlyMessage);
     }
   }
 
@@ -200,45 +226,46 @@ export default function ProfilePage() {
       <Card className="max-w-2xl p-8">
         <h2 className="mb-2 text-lg font-semibold text-foreground">بيانات الحساب</h2>
         <form onSubmit={submitForm} className="flex flex-col">
-          <ProfileRow label="الاسم الكامل" htmlFor="profile-name">
+          <ProfileRow label="الاسم الكامل" htmlFor="profile-name" error={errors.fullName}>
             <Input
               id="profile-name"
               value={form.fullName}
-              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+              onChange={(e) => setValue('fullName', e.target.value)}
+              onBlur={() => handleBlur('fullName')}
               placeholder="محمد أحمد"
+              aria-invalid={Boolean(errors.fullName)}
             />
           </ProfileRow>
 
-          <ProfileRow label="البريد الإلكتروني" htmlFor="profile-email">
+          <ProfileRow label="البريد الإلكتروني" htmlFor="profile-email" error={errors.email}>
             <Input
               id="profile-email"
               type="email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={(e) => setValue('email', e.target.value)}
+              onBlur={() => handleBlur('email')}
               placeholder="name@example.com"
+              aria-invalid={Boolean(errors.email)}
             />
           </ProfileRow>
 
-          <ProfileRow label="كلمة مرور جديدة" htmlFor="profile-password" hint="اتركها فارغة للإبقاء على كلمة المرور الحالية">
+          <ProfileRow
+            label="كلمة مرور جديدة"
+            htmlFor="profile-password"
+            hint="اتركها فارغة للإبقاء على كلمة المرور الحالية"
+            error={errors.password}
+          >
             <Input
               id="profile-password"
               type="password"
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              onChange={(e) => setValue('password', e.target.value)}
+              onBlur={() => handleBlur('password')}
               placeholder="••••••••"
+              aria-invalid={Boolean(errors.password)}
             />
           </ProfileRow>
 
-          {status === 'saved' && (
-            <Alert variant="success" className="mt-5">
-              <AlertDescription>تم حفظ التغييرات بنجاح.</AlertDescription>
-            </Alert>
-          )}
-          {status === 'error' && (
-            <Alert variant="destructive" className="mt-5">
-              <AlertDescription>تعذّر حفظ التغييرات. تحقق من اتصال الخادم وحاول مرة أخرى.</AlertDescription>
-            </Alert>
-          )}
           {status === 'invalid-session' && (
             <Alert variant="destructive" className="mt-5">
               <AlertDescription>
@@ -259,15 +286,19 @@ export default function ProfilePage() {
   );
 }
 
-function ProfileRow({ label, htmlFor, hint, children }) {
+function ProfileRow({ label, htmlFor, hint, error, children }) {
   return (
-    <div className="flex flex-col gap-2 border-b border-border py-5 first:pt-0 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:gap-6">
-      <Label htmlFor={htmlFor} className="shrink-0 sm:w-48">
+    <div className="flex flex-col gap-2 border-b border-border py-5 first:pt-0 last:border-b-0 last:pb-0 sm:flex-row sm:items-start sm:gap-6">
+      <Label htmlFor={htmlFor} className="shrink-0 sm:mt-2.5 sm:w-48">
         {label}
       </Label>
       <div className="flex-1">
         {children}
-        {hint && <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>}
+        {error ? (
+          <p className="mt-1.5 text-xs text-error">{error}</p>
+        ) : hint ? (
+          <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>
+        ) : null}
       </div>
     </div>
   );

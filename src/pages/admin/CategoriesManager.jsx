@@ -10,12 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import FormField from '@/components/ui/form-field';
 import ImagePicker from '@/components/ui/ImagePicker';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import EmptyState from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { isAdmin } from '@/lib/roles';
 import { normalizeCategory } from '../../utils/constants';
+import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
 
 export default function CategoriesManager() {
   const currentUser = getStoredUser();
@@ -23,11 +24,10 @@ export default function CategoriesManager() {
 
   const [items, setItems] = useState([]);
   const [name, setName] = useState('');
+  const [nameError, setNameError] = useState(null);
   const [parentId, setParentId] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const tree = useMemo(() => buildCategoryTree(items), [items]);
@@ -59,7 +59,7 @@ export default function CategoriesManager() {
       } catch (err) {
         console.error('Failed to load categories tree:', err);
         if (isMounted) {
-          setErrorMsg('فشل الاتصال بالخلفية لجلب شجرة التصنيفات الأكاديمية.');
+          notify.error(err.friendlyMessage || 'فشل جلب شجرة التصنيفات.');
           setLoading(false);
         }
       }
@@ -70,16 +70,6 @@ export default function CategoriesManager() {
       isMounted = false;
     };
   }, [userIsAdmin]);
-
-  useEffect(() => {
-    if (successMsg || errorMsg) {
-      const timer = setTimeout(() => {
-        setSuccessMsg('');
-        setErrorMsg('');
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMsg, errorMsg]);
 
   if (!userIsAdmin) {
     return (
@@ -104,7 +94,11 @@ export default function CategoriesManager() {
 
   async function addCategory(event) {
     event.preventDefault();
-    if (!name.trim()) return;
+    if (name.trim().length < 2) {
+      setNameError('اسم التصنيف مطلوب (حرفان على الأقل).');
+      return;
+    }
+    setNameError(null);
 
     const parentCategoryObj = parentId ? { id: Number(parentId) } : null;
 
@@ -128,13 +122,13 @@ export default function CategoriesManager() {
       }
 
       setItems((current) => [...current, normalizeCategory(created, parentId ? Number(parentId) : null)]);
-      setSuccessMsg(`تم إنشاء التصنيف الأكاديمي "${name}" بنجاح.`);
+      notify.success(SUCCESS.CATEGORY_CREATED);
       setName('');
       setParentId('');
       setImageFile(null);
     } catch (err) {
-      console.error('Failed to create category:', err);
-      setErrorMsg('فشل حفظ القسم الجديد بالخلفية. تأكد من إعدادات الاتصال.');
+      if (err.fieldErrors?.name) setNameError(err.fieldErrors.name);
+      notify.error(err.friendlyMessage);
     }
   }
 
@@ -142,15 +136,10 @@ export default function CategoriesManager() {
     try {
       await api.delete(`/categories/${deleteTarget.id}`);
       setItems((current) => current.filter((item) => item.id !== deleteTarget.id && item.parentId !== deleteTarget.id));
-      setSuccessMsg('تم حذف التصنيف المحدد بنجاح.');
+      notify.success(SUCCESS.CATEGORY_DELETED);
     } catch (err) {
-      console.error('Failed to delete category:', err);
-      const backendMessage = err.response?.data?.error || '';
-      setErrorMsg(
-        backendMessage.includes('parent category')
-          ? 'لا يمكن حذف هذا القسم لأنه يحتوي على أقسام فرعية نشطة. يرجى حذف الأقسام الفرعية أولاً.'
-          : backendMessage || 'تعذر حذف هذا التصنيف. يرجى التحقق من اتصال الخادم والمحاولة مرة أخرى.'
-      );
+      notify.error(err.friendlyMessage);
+      throw err;
     }
   }
 
@@ -164,10 +153,9 @@ export default function CategoriesManager() {
       });
 
       setItems((current) => current.map((item) => (item.id === category.id ? { ...item, name: nextName } : item)));
-      setSuccessMsg('تم تحديث وتعديل اسم القسم الأكاديمي.');
+      notify.success(SUCCESS.CATEGORY_UPDATED);
     } catch (err) {
-      console.error('Failed to rename category:', err);
-      setErrorMsg('عذراً، فشل تحديث التسمية بقاعدة البيانات.');
+      notify.error(err.friendlyMessage);
     }
   }
 
@@ -184,21 +172,6 @@ export default function CategoriesManager() {
         }
       />
 
-      {(successMsg || errorMsg) && (
-        <div className="mb-6">
-          {successMsg && (
-            <Alert variant="success">
-              <AlertDescription>{successMsg}</AlertDescription>
-            </Alert>
-          )}
-          {errorMsg && (
-            <Alert variant="destructive">
-              <AlertDescription>{errorMsg}</AlertDescription>
-            </Alert>
-          )}
-        </div>
-      )}
-
       <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-2">
         <Card className="p-7">
           <h2 className="mb-5 flex items-center gap-2 border-b border-border pb-4 font-display text-lg font-semibold text-foreground">
@@ -207,12 +180,16 @@ export default function CategoriesManager() {
           </h2>
 
           <form onSubmit={addCategory} className="flex flex-col gap-5">
-            <FormField label="اسم التصنيف (بالعربية أو الإنجليزية)" htmlFor="category-name">
+            <FormField label="اسم التصنيف (بالعربية أو الإنجليزية)" error={nameError} htmlFor="category-name">
               <Input
                 id="category-name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (nameError) setNameError(null);
+                }}
                 placeholder="مثال: هندسة البرمجيات، قواعد البيانات"
+                aria-invalid={Boolean(nameError)}
               />
             </FormField>
 

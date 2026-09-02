@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 import { normalizeQuiz } from '../../utils/constants';
 import { useFetchQuiz, usePublishQuiz, useAddQuestion, useUpdateQuestion, useDeleteQuestion } from '../../hooks/useQuiz';
 import QuestionModal from './components/QuestionModal';
+import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
 
 export default function QuizEditor() {
   const { quizId } = useParams();
@@ -41,8 +43,10 @@ export default function QuizEditor() {
     try {
       const updated = await publishQuiz(quizId);
       setQuiz(updated);
+      notify.success(SUCCESS.QUIZ_PUBLISHED);
     } catch (e) {
-      setActionError(e.message || 'فشل نشر الكويز');
+      setActionError(e.message || 'تعذّر نشر الاختبار.');
+      notify.error(e.message || 'تعذّر نشر الاختبار.');
     } finally {
       setPublishing(false);
     }
@@ -56,6 +60,7 @@ export default function QuizEditor() {
       choices: form.choices.map((c) => ({ choiceText: c.choiceText, isCorrect: c.isCorrect })),
     });
     setQuiz(updated);
+    notify.success(SUCCESS.QUESTION_SAVED);
   }
 
   async function handleUpdateQuestion(form) {
@@ -66,6 +71,7 @@ export default function QuizEditor() {
       choices: form.choices.map((c) => ({ choiceText: c.choiceText, isCorrect: c.isCorrect })),
     });
     setQuiz(updated);
+    notify.success(SUCCESS.QUESTION_SAVED);
   }
 
   async function handleConfirmDeleteQuestion() {
@@ -73,8 +79,11 @@ export default function QuizEditor() {
       await deleteQuestion(quizId, deleteTarget.id);
       await fetchQuiz(quizId);
       setActionError(null);
+      notify.success(SUCCESS.QUESTION_DELETED);
     } catch (e) {
-      setActionError(e.message || 'فشل حذف السؤال');
+      setActionError(e.message || 'تعذّر حذف السؤال.');
+      notify.error(e.message || 'تعذّر حذف السؤال.');
+      throw e;
     }
   }
 

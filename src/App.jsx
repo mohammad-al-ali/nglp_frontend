@@ -7,6 +7,7 @@
   useLocation,
 } from 'react-router-dom';
 import RoleRoute, { ROLE_ADMIN, ROLE_STUDENT, ROLE_TEACHER } from './components/RoleRoute';
+import Toaster from './components/ui/toaster';
 import Sidebar from './components/Sidebar';
 import MarketingHeader from './components/layout/MarketingHeader';
 import MarketingFooter from './components/layout/MarketingFooter';
@@ -34,6 +35,7 @@ import StudentQuizList from './pages/student/StudentQuizList';
 function App() {
   return (
     <BrowserRouter>
+      <Toaster />
       <Routes>
         <Route element={<MarketingShell />}>
           <Route path="/" element={<LandingPage />} />

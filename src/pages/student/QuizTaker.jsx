@@ -10,6 +10,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import EmptyState from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { useFetchQuizStudent, useCheckAnswer, useStartAttempt, useSubmitAttempt } from '../../hooks/useQuiz';
+import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
 
 const CHOICE_LETTERS = ['أ', 'ب', 'ج', 'د'];
 
@@ -66,7 +68,9 @@ export default function QuizTaker() {
   async function handleSubmit() {
     const unanswered = questions.filter((qq) => !answers[qq.id]);
     if (unanswered.length > 0) {
-      setLocalError('يرجى الإجابة على جميع الأسئلة قبل التسليم');
+      const message = `يرجى الإجابة على جميع الأسئلة قبل التسليم (${unanswered.length} بلا إجابة).`;
+      setLocalError(message);
+      notify.warning(message);
       return;
     }
     try {
@@ -77,8 +81,11 @@ export default function QuizTaker() {
       }));
       const res = await submitAttempt(attempt.attemptId, formatted);
       setResult(res);
+      notify.success(SUCCESS.QUIZ_SUBMITTED(res?.score ?? ''));
     } catch (e) {
-      setLocalError(e.message || 'فشل تسليم الإجابات');
+      const message = e.message || 'تعذّر تسليم الإجابات.';
+      setLocalError(message);
+      notify.error(message);
     }
   }
 

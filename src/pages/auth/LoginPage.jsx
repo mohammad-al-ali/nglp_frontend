@@ -1,39 +1,41 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api, { saveStoredUser } from '../../services/api';
+import { useForm } from '@/hooks/useForm';
+import { required, email as emailRule, password as passwordRule } from '@/lib/validation';
+import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import FormField from '@/components/ui/form-field';
 
+const schema = {
+  email: [required('البريد الإلكتروني'), emailRule()],
+  password: [required('كلمة المرور'), passwordRule()],
+};
+
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  function validate() {
-    const nextErrors = {};
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      nextErrors.email = 'أدخل بريداً إلكترونياً صحيحاً.';
-    }
-    if (form.password.length < 6) {
-      nextErrors.password = 'يجب أن تكون كلمة المرور 6 أحرف على الأقل.';
-    }
-    return nextErrors;
-  }
+  const { values, errors, setValue, handleBlur, validateAll, setServerErrors } = useForm(
+    { email: '', password: '' },
+    schema
+  );
 
   async function submitForm(event) {
     event.preventDefault();
-    const nextErrors = validate();
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (!validateAll()) return;
 
     setIsSubmitting(true);
     try {
-      const response = await api.post('/auth/login', form);
+      const response = await api.post('/auth/login', {
+        email: values.email.trim(),
+        password: values.password,
+      });
       const user = response.data.user || response.data;
       saveStoredUser(user);
+      notify.success(SUCCESS.LOGIN);
 
       const roleName = user.role?.name || user.role || '';
       if (/ADMIN/i.test(roleName)) {
@@ -44,10 +46,8 @@ export default function LoginPage() {
         navigate('/dashboard');
       }
     } catch (err) {
-      console.error('Login error:', err);
-      setErrors({
-        password: 'البريد الإلكتروني أو كلمة المرور غير صحيحة، أو أن الخادم غير متاح حالياً.',
-      });
+      setServerErrors(err.fieldErrors);
+      notify.error(err.friendlyMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -69,8 +69,9 @@ export default function LoginPage() {
             <Input
               id="login-email"
               type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              value={values.email}
+              onChange={(e) => setValue('email', e.target.value)}
+              onBlur={() => handleBlur('email')}
               placeholder="name@example.com"
               aria-invalid={Boolean(errors.email)}
             />
@@ -80,8 +81,9 @@ export default function LoginPage() {
             <Input
               id="login-password"
               type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              value={values.password}
+              onChange={(e) => setValue('password', e.target.value)}
+              onBlur={() => handleBlur('password')}
               placeholder="••••••••"
               aria-invalid={Boolean(errors.password)}
             />

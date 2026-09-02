@@ -18,6 +18,8 @@ import EmptyState from '@/components/ui/empty-state';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import { useUploadQueue } from '../../hooks/useUploadQueue';
 import { normalizeCourse, normalizeLesson } from '../../utils/constants';
+import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
 
 export default function ManageLessons() {
   const { courseId } = useParams();
@@ -28,7 +30,6 @@ export default function ManageLessons() {
   const [lessonsStatus, setLessonsStatus] = useState('loading'); // loading | ready | error
 
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteError, setDeleteError] = useState(null);
 
   const [imageTargetLessonId, setImageTargetLessonId] = useState(null);
   const [imageUploadStatus, setImageUploadStatus] = useState({}); // { [lessonId]: 'uploading' | 'error' }
@@ -108,10 +109,10 @@ export default function ManageLessons() {
     try {
       await api.delete(`/lessons/${deleteTarget.id}`);
       setLessons((current) => current.filter((l) => l.id !== deleteTarget.id));
-      setDeleteError(null);
+      notify.success(SUCCESS.LESSON_DELETED);
     } catch (err) {
-      console.warn('Failed to delete lesson.', err);
-      setDeleteError(`تعذّر حذف الدرس "${deleteTarget.title}". يرجى المحاولة مرة أخرى.`);
+      notify.error(err.friendlyMessage);
+      throw err; // أبقِ نافذة التأكيد مفتوحة عند الفشل
     }
   }
 
@@ -138,22 +139,26 @@ export default function ManageLessons() {
         delete next[lessonId];
         return next;
       });
+      notify.success('تم تحديث صورة الدرس');
     } catch (err) {
-      console.warn('Failed to upload lesson image.', err);
       setImageUploadStatus((current) => ({ ...current, [lessonId]: 'error' }));
+      notify.error(err.friendlyMessage);
     }
   }
 
   function handleFiles(fileList) {
-    Array.from(fileList)
-      .filter((file) => file.type === 'video/mp4' || file.name.endsWith('.mp4'))
-      .forEach((file) => {
-        queueLesson({
-          file,
-          title: lessonTitle.trim() || file.name.replace(/\.mp4$/i, ''),
-          description: lessonDescription.trim(),
-        });
+    const all = Array.from(fileList);
+    const accepted = all.filter((file) => file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4'));
+    accepted.forEach((file) => {
+      queueLesson({
+        file,
+        title: lessonTitle.trim() || file.name.replace(/\.mp4$/i, ''),
+        description: lessonDescription.trim(),
       });
+    });
+    if (accepted.length < all.length) {
+      notify.warning('تم تجاهل بعض الملفات — يُقبل فيديو بصيغة MP4 فقط.');
+    }
     setLessonTitle('');
     setLessonDescription('');
   }
@@ -161,8 +166,7 @@ export default function ManageLessons() {
   async function handleFinalSubmit() {
     const pendingCount = queue.filter((item) => item.status === 'pending').length;
     if (pendingCount === 0) {
-      setSubmitStatus('error');
-      setSubmitError('لا توجد دروس جديدة في قائمة الانتظار لرفعها.');
+      notify.warning('لا توجد دروس جديدة في قائمة الانتظار لرفعها.');
       return;
     }
 
@@ -172,10 +176,11 @@ export default function ManageLessons() {
       const uploaded = await uploadAll(courseId);
       setLessons((current) => [...current, ...uploaded.map(normalizeLesson)]);
       setSubmitStatus('done');
+      notify.success(SUCCESS.LESSONS_UPLOADED(uploaded.length));
     } catch (err) {
-      console.error('Some lessons failed to upload.', err);
       setSubmitStatus('error');
       setSubmitError('حدث خطأ أثناء رفع بعض الدروس. تحقق من الاتصال بالخادم وحاول مرة أخرى.');
+      notify.error(err.friendlyMessage || 'تعذّر رفع بعض الدروس.');
     }
   }
 
@@ -294,12 +299,7 @@ export default function ManageLessons() {
                 {submitStatus === 'uploading' ? 'جاري رفع الدروس الجديدة...' : 'رفع ونشر جميع الدروس الجديدة'}
               </Button>
 
-              {submitStatus === 'done' && (
-                <Alert variant="success">
-                  <AlertDescription>تم نشر الدروس الجديدة المرفقة بنجاح على قاعدة البيانات.</AlertDescription>
-                </Alert>
-              )}
-              {submitStatus === 'error' && (
+              {submitStatus === 'error' && submitError && (
                 <Alert variant="destructive">
                   <AlertDescription>{submitError}</AlertDescription>
                 </Alert>
@@ -312,12 +312,6 @@ export default function ManageLessons() {
               <p className="text-sm leading-relaxed text-muted-foreground">
                 قائمة بالدروس التعليمية المدرجة حالياً ضمن هذا المنهج. يمكنك حذف أي درس أو إدارة اختباراته.
               </p>
-
-              {deleteError && (
-                <Alert variant="destructive">
-                  <AlertDescription>{deleteError}</AlertDescription>
-                </Alert>
-              )}
 
               {lessonsStatus === 'loading' ? (
                 <div className="flex flex-col gap-3">

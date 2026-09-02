@@ -10,11 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import StatCard from '@/components/ui/StatCard';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import EmptyState from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { isAdmin } from '@/lib/roles';
+import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
 
 const ROLE_LABELS = {
   ROLE_ADMIN: 'مشرف النظام',
@@ -37,8 +38,6 @@ export default function UsersManagement() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('users'); // 'users' | 'courses'
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null); // { type: 'user' | 'course', id, label }
 
   useEffect(() => {
@@ -59,7 +58,7 @@ export default function UsersManagement() {
       } catch (err) {
         console.error('Failed to load admin dashboard data:', err);
         if (isMounted) {
-          setErrorMsg('حدث خطأ أثناء تحميل البيانات من الخادم، يرجى التأكد من تشغيل الخادم.');
+          notify.error(err.friendlyMessage || 'حدث خطأ أثناء تحميل البيانات من الخادم.');
           setLoading(false);
         }
       }
@@ -70,16 +69,6 @@ export default function UsersManagement() {
       isMounted = false;
     };
   }, [userIsAdmin]);
-
-  useEffect(() => {
-    if (successMsg || errorMsg) {
-      const timer = setTimeout(() => {
-        setSuccessMsg('');
-        setErrorMsg('');
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMsg, errorMsg]);
 
   if (!userIsAdmin) {
     return (
@@ -115,16 +104,16 @@ export default function UsersManagement() {
     const updatedUser = { ...previousUser, ...changes };
     setUsers((current) => current.map((u) => (u.id === userId ? updatedUser : u)));
 
+    const changedRole = Object.prototype.hasOwnProperty.call(changes, 'role');
     try {
       await api.put(`/users/${userId}/admin`, {
         role: updatedUser.role,
         blocked: updatedUser.blocked,
       });
-      setSuccessMsg('تم تحديث صلاحيات الحساب بنجاح في قاعدة البيانات.');
+      notify.success(changedRole ? SUCCESS.USER_ROLE_UPDATED : SUCCESS.USER_BLOCK_UPDATED);
     } catch (err) {
-      console.error('Failed to update user in DB:', err);
       setUsers((current) => current.map((u) => (u.id === userId ? previousUser : u)));
-      setErrorMsg('فشل تحديث الحساب بالخلفية. يرجى التحقق من الصلاحيات، والتغيير لم يُحفظ.');
+      notify.error(err.friendlyMessage || 'لم يُحفظ التغيير.');
     }
   }
 
@@ -134,15 +123,15 @@ export default function UsersManagement() {
       if (type === 'user') {
         await api.delete(`/users/${id}`);
         setUsers((current) => current.filter((u) => u.id !== id));
-        setSuccessMsg('تم حذف الحساب نهائياً من قاعدة البيانات.');
+        notify.success(SUCCESS.USER_DELETED);
       } else {
         await api.delete(`/courses/${id}`);
         setCourses((current) => current.filter((c) => c.id !== id));
-        setSuccessMsg('تم حذف الكورس الأكاديمي بنجاح.');
+        notify.success(SUCCESS.COURSE_DELETED);
       }
     } catch (err) {
-      console.error(`Failed to delete ${type}:`, err);
-      setErrorMsg(type === 'user' ? 'تعذر حذف العضو. تأكد من عدم ارتباطه بكورسات أو سجلات نشطة.' : 'تعذر حذف الكورس من قاعدة البيانات.');
+      notify.error(err.friendlyMessage);
+      throw err;
     }
   }
 
@@ -169,21 +158,6 @@ export default function UsersManagement() {
           </Button>
         }
       />
-
-      {(successMsg || errorMsg) && (
-        <div className="mb-6">
-          {successMsg && (
-            <Alert variant="success">
-              <AlertDescription>{successMsg}</AlertDescription>
-            </Alert>
-          )}
-          {errorMsg && (
-            <Alert variant="destructive">
-              <AlertDescription>{errorMsg}</AlertDescription>
-            </Alert>
-          )}
-        </div>
-      )}
 
       <div className="mb-7 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="إجمالي الأعضاء" value={loading ? '...' : totalUsersCount} icon={Users} tone="primary" />

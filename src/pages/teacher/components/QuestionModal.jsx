@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import FormField from '@/components/ui/form-field';
 import { cn } from '@/lib/utils';
+import { notify } from '@/lib/toast';
 
 const emptyQuestion = () => ({
   questionText: '',
@@ -50,23 +51,26 @@ export default function QuestionModal({ question, onClose, onSave }) {
 
   async function handleSave() {
     if (!form.questionText.trim()) {
-      setError('يرجى إدخال نص السؤال');
+      setError('يرجى إدخال نص السؤال.');
       return;
     }
     if (form.choices.some((c) => !c.choiceText.trim())) {
-      setError('يرجى تعبئة جميع الخيارات');
+      setError('يرجى تعبئة الخيارات الأربعة كاملةً.');
       return;
     }
     if (!form.choices.some((c) => c.isCorrect)) {
-      setError('يرجى تحديد الإجابة الصحيحة');
+      setError('يرجى تحديد الإجابة الصحيحة.');
       return;
     }
+    setError('');
     setSaving(true);
     try {
       await onSave(form);
       onClose();
     } catch (err) {
-      setError(err.message || 'فشل حفظ السؤال');
+      const message = err.message || 'تعذّر حفظ السؤال.';
+      setError(message);
+      notify.error(message);
     } finally {
       setSaving(false);
     }

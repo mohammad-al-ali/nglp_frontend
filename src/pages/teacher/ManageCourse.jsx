@@ -9,13 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import FormField from '@/components/ui/form-field';
 import StepHeader from '@/components/ui/step-header';
 import BackLink from '@/components/ui/back-link';
 import EmptyState from '@/components/ui/empty-state';
 import ImagePicker from '@/components/ui/ImagePicker';
 import { categories as defaultCategories, normalizeCategory, normalizeCourse } from '../../utils/constants';
+import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
 
 export default function ManageCourse() {
   const { courseId } = useParams();
@@ -80,8 +81,9 @@ export default function ManageCourse() {
 
   async function handleSubmit(e) {
     if (e) e.preventDefault();
-    if (!courseInfo.title.trim()) {
-      setTitleError('يرجى تحديد عنوان الكورس.');
+    if (courseInfo.title.trim().length < 3) {
+      setTitleError('عنوان الكورس مطلوب (3 أحرف على الأقل).');
+      notify.error('يرجى تصحيح الحقول المميّزة ثم إعادة المحاولة.');
       return;
     }
 
@@ -89,14 +91,16 @@ export default function ManageCourse() {
     setSubmitStatus('saving');
     try {
       await api.put(`/courses/${courseId}`, {
-        title: courseInfo.title,
+        title: courseInfo.title.trim(),
         description: courseInfo.description,
         category: { id: courseInfo.categoryId },
       });
       setSubmitStatus('done');
+      notify.success(SUCCESS.COURSE_UPDATED);
     } catch (err) {
-      console.warn('Backend rejected course update.', err);
       setSubmitStatus('error');
+      if (err.fieldErrors?.title) setTitleError(err.fieldErrors.title);
+      notify.error(err.friendlyMessage);
     }
   }
 
@@ -110,9 +114,10 @@ export default function ManageCourse() {
       const normalized = normalizeCourse(response.data);
       setCourseInfo((current) => ({ ...current, imageUrl: normalized.imageUrl }));
       setImageStatus('done');
+      notify.success(SUCCESS.COURSE_IMAGE_UPDATED);
     } catch (err) {
-      console.warn('Failed to upload course image.', err);
       setImageStatus('error');
+      notify.error(err.friendlyMessage);
     }
   }
 
@@ -185,17 +190,7 @@ export default function ManageCourse() {
                   {submitStatus === 'saving' ? 'جاري حفظ التغييرات...' : 'حفظ التغييرات'}
                 </Button>
 
-                {submitStatus === 'done' && (
-                  <Alert variant="success" className="w-full">
-                    <AlertDescription>تم حفظ تفاصيل المنهج الدراسي بنجاح.</AlertDescription>
-                  </Alert>
-                )}
-                {submitStatus === 'error' && (
-                  <Alert variant="destructive" className="w-full">
-                    <AlertDescription>تعذّر حفظ التغييرات. تحقق من الاتصال بالخادم وحاول مرة أخرى.</AlertDescription>
-                  </Alert>
-                )}
-              </div>
+      </div>
             </form>
           </Card>
         </div>

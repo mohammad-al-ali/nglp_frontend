@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getApiErrorMessage, getFieldErrors, getApiErrorCode } from '@/lib/apiError';
 
 // عنوان الـ API الأساسي — مصدر واحد، بدل ثلاث نسخ متفرقة بأشكال مختلفة
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
@@ -67,14 +68,22 @@ api.interceptors.response.use(
     return response; // إذا كان الرد سليماً، مرره
   },
   (error) => {
-    // إذا رد الخادم بخطأ 401 (غير مصرح) أو 403 (ممنوع من الدخول)
-    // فهذا يعني أن الجلسة انتهت أو المستخدم غير مسجل دخول
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      console.warn("Authentication failed or session expired. Redirecting...");
-      
-      // يمكنك مستقبلاً تفعيل مسح البيانات وتوجيهه لشاشة الدخول تلقائياً
-      // localStorage.removeItem(CURRENT_USER_KEY);
-      // window.location.href = '/login';
+    // إرفاق رسالة عربية موحّدة + أخطاء الحقول بكائن الخطأ ليستهلكها أي مستدعٍ مباشرة.
+    error.friendlyMessage = getApiErrorMessage(error);
+    error.fieldErrors = getFieldErrors(error);
+    error.apiErrorCode = getApiErrorCode(error);
+
+    // انتهاء الجلسة (401) — نُخرج المستخدم لصفحة الدخول (مع تجاهل نداءات auth نفسها).
+    // ملاحظة: 403 (صلاحية غير كافية) يبقى خطأ عادياً تعرضه الصفحة، لا يسبب تسجيل خروج.
+    const status = error.response && error.response.status;
+    const url = (error.config && error.config.url) || '';
+    const isAuthCall = url.includes('/auth/');
+    if (status === 401 && !isAuthCall && getStoredUser()) {
+      console.warn('انتهت الجلسة — إعادة توجيه لصفحة الدخول.');
+      localStorage.removeItem(CURRENT_USER_KEY);
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

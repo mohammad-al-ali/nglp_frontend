@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import FormField from '@/components/ui/form-field';
 import api from '../../../services/api';
 import { useFetchProviders, useFetchUserSettings, useUpdateUserSettings } from '../../../hooks/useQuiz';
+import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
 
 export default function GenerateQuizModal({ lessonId, teacherId, onClose, onGenerated }) {
   const [title, setTitle] = useState('');
@@ -52,12 +54,12 @@ export default function GenerateQuizModal({ lessonId, teacherId, onClose, onGene
   }
 
   async function handleGenerate() {
-    if (!title.trim()) {
-      setError('يرجى إدخال عنوان الاختبار');
+    if (title.trim().length < 3) {
+      setError('عنوان الاختبار مطلوب (3 أحرف على الأقل).');
       return;
     }
     if (numberOfQuestions < 1 || numberOfQuestions > 20) {
-      setError('عدد الأسئلة يجب أن يكون بين 1 و20');
+      setError('عدد الأسئلة يجب أن يكون بين 1 و 20.');
       return;
     }
     setLoading(true);
@@ -69,10 +71,13 @@ export default function GenerateQuizModal({ lessonId, teacherId, onClose, onGene
         numberOfQuestions: Number(numberOfQuestions),
         teacherId: Number(teacherId),
       });
+      notify.success(SUCCESS.QUIZ_GENERATED);
       onGenerated?.(res.data);
       onClose();
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'فشل توليد الكويز');
+      const message = err.friendlyMessage || 'تعذّر توليد الاختبار.';
+      setError(message);
+      notify.error(message);
     } finally {
       setLoading(false);
     }
