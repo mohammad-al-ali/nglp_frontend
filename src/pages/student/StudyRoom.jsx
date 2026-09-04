@@ -430,7 +430,12 @@ export default function StudyRoom() {
     try {
       const response = await fetch(`${API_BASE_URL}/ai/messages/stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // نداء fetch خام يتجاوز معترضات axios — نرسل هوية المستخدم يدوياً
+        // كي يفحص المعترض الخلفي حالة الحظر على هذا المسار أيضاً.
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': String(getCurrentUserId() ?? ''),
+        },
         credentials: 'include',
         body: JSON.stringify({
           userId: Number(getCurrentUserId()),

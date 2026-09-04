@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getApiErrorMessage, getFieldErrors, getApiErrorCode } from '@/lib/apiError';
+import { notify } from '@/lib/toast';
 
 // عنوان الـ API الأساسي — مصدر واحد، بدل ثلاث نسخ متفرقة بأشكال مختلفة
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
@@ -60,6 +61,27 @@ api.interceptors.request.use(
   }
 );
 
+// إخراج قسري موحّد: يمسح المستخدم المخزّن ثم يحوّل لصفحة الدخول.
+// محميّ بعلَم كي لا تتكدّس الإشعارات/التحويلات عند وصول عدة استجابات فاشلة متوازية.
+let forcedLogoutInProgress = false;
+
+function forceLogout({ toastMessage } = {}) {
+  if (forcedLogoutInProgress) return;
+  forcedLogoutInProgress = true;
+
+  localStorage.removeItem(CURRENT_USER_KEY);
+  if (toastMessage) {
+    try {
+      notify.error(toastMessage);
+    } catch {
+      /* تجاهل — الإشعار ثانوي بالنسبة للتحويل */
+    }
+  }
+  if (!window.location.pathname.startsWith('/login')) {
+    window.location.href = '/login';
+  }
+}
+
 // ==========================================
 // 🌟 معترض الاستجابة (Response Interceptor) - اختياري ولكنه مفيد
 // ==========================================
@@ -73,17 +95,22 @@ api.interceptors.response.use(
     error.fieldErrors = getFieldErrors(error);
     error.apiErrorCode = getApiErrorCode(error);
 
-    // انتهاء الجلسة (401) — نُخرج المستخدم لصفحة الدخول (مع تجاهل نداءات auth نفسها).
-    // ملاحظة: 403 (صلاحية غير كافية) يبقى خطأ عادياً تعرضه الصفحة، لا يسبب تسجيل خروج.
     const status = error.response && error.response.status;
     const url = (error.config && error.config.url) || '';
     const isAuthCall = url.includes('/auth/');
+
+    // الحساب حُظر أثناء الجلسة — إخراج فوري مهما كان المسار، مع رسالة عربية.
+    if (status === 403 && error.apiErrorCode === 'ACCOUNT_BLOCKED' && getStoredUser()) {
+      console.warn('الحساب محظور — إنهاء الجلسة وإعادة التوجيه لصفحة الدخول.');
+      forceLogout({ toastMessage: error.friendlyMessage });
+      return Promise.reject(error);
+    }
+
+    // انتهاء الجلسة (401) — نُخرج المستخدم لصفحة الدخول (مع تجاهل نداءات auth نفسها).
+    // ملاحظة: 403 (صلاحية غير كافية) يبقى خطأ عادياً تعرضه الصفحة، لا يسبب تسجيل خروج.
     if (status === 401 && !isAuthCall && getStoredUser()) {
       console.warn('انتهت الجلسة — إعادة توجيه لصفحة الدخول.');
-      localStorage.removeItem(CURRENT_USER_KEY);
-      if (!window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login';
-      }
+      forceLogout();
     }
     return Promise.reject(error);
   }
