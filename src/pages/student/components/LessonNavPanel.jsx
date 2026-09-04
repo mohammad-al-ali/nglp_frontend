@@ -6,9 +6,9 @@ import { formatDuration } from '../../../utils/constants';
 /**
  * قائمة دروس الكورس داخل غرفة الدراسة (الـ Playlist).
  *
- * حالة كل درس تُشتق من ترتيب القائمة بالنسبة لآخر درس تمّت مشاهدته
- * (lastWatchedLessonId): ما قبله = مكتمل، هو = الحالي، ما بعده = لم يبدأ.
- * تقدير تقريبي — الطالب الذي يقفز بين الدروس لن تظهر كل الدروس الوسيطة كمكتملة.
+ * حالة الإكمال تأتي من completedLessonIds (تتبّع فعلي في الخادم). عند غيابها
+ * تُشتق تقريبياً من ترتيب القائمة مقابل آخر درس مُشاهَد. زر العلامة الدائرية
+ * يُبدّل حالة الإكمال عبر onToggleComplete دون تفعيل التنقّل (stopPropagation).
  */
 export default function LessonNavPanel({
   show,
@@ -16,11 +16,14 @@ export default function LessonNavPanel({
   lessons,
   activeLessonId,
   lastWatchedLessonId,
+  completedLessonIds,
+  onToggleComplete,
   loading = false,
   onNavigate,
 }) {
   const totalSeconds = lessons.reduce((sum, lesson) => sum + (lesson.durationSeconds || 0), 0);
   const hasAnyDuration = lessons.some((lesson) => lesson.durationSeconds > 0);
+  const hasCompletionData = Array.isArray(completedLessonIds);
 
   const lastWatchedIndex = lastWatchedLessonId
     ? lessons.findIndex((lesson) => String(lesson.id) === String(lastWatchedLessonId))
@@ -69,29 +72,53 @@ export default function LessonNavPanel({
           ) : (
             lessons.map((lesson, index) => {
               const isActive = String(lesson.id) === String(activeLessonId);
-              const status =
-                lastWatchedIndex === -1
-                  ? 'todo'
-                  : index < lastWatchedIndex
-                    ? 'done'
-                    : index === lastWatchedIndex
-                      ? 'current'
-                      : 'todo';
+              const isDone = hasCompletionData
+                ? completedLessonIds.some((id) => String(id) === String(lesson.id))
+                : lastWatchedIndex !== -1 && index < lastWatchedIndex;
+              const status = isDone
+                ? 'done'
+                : lastWatchedIndex !== -1 && index === lastWatchedIndex
+                  ? 'current'
+                  : 'todo';
+
+              const navigateRow = () => onNavigate(lesson.id);
 
               return (
-                <button
+                <div
                   key={lesson.id}
-                  type="button"
-                  onClick={() => onNavigate(lesson.id)}
+                  role="button"
+                  tabIndex={0}
+                  onClick={navigateRow}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigateRow();
+                    }
+                  }}
                   aria-current={isActive ? 'true' : undefined}
                   className={cn(
-                    'my-0.5 flex w-full items-center gap-2.5 rounded-md border px-3.5 py-3 text-start transition-all duration-200 ease-in-out',
+                    'my-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-md border px-3.5 py-3 text-start transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                     isActive
                       ? 'border-primary-border bg-primary-soft'
                       : 'border-transparent hover:border-border hover:bg-surface-raised'
                   )}
                 >
-                  <LessonStatusMark status={status} index={index} isActive={isActive} />
+                  {onToggleComplete ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleComplete(lesson.id, !isDone);
+                      }}
+                      aria-label={isDone ? 'إلغاء علامة مكتمل' : 'وضع علامة مكتمل'}
+                      aria-pressed={isDone}
+                      className="shrink-0 rounded-full transition-transform hover:scale-110"
+                    >
+                      <LessonStatusMark status={status} index={index} isActive={isActive} />
+                    </button>
+                  ) : (
+                    <LessonStatusMark status={status} index={index} isActive={isActive} />
+                  )}
 
                   <div className="min-w-0 flex-1 text-start">
                     <strong
@@ -107,7 +134,7 @@ export default function LessonNavPanel({
                       <span dir="ltr">{lesson.durationSeconds > 0 ? lesson.duration : '—:—'}</span>
                     </small>
                   </div>
-                </button>
+                </div>
               );
             })
           )}

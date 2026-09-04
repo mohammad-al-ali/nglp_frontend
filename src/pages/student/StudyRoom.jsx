@@ -89,6 +89,7 @@ export default function StudyRoom() {
   const [lessons, setLessons] = useState([]);
   const [activeLesson, setActiveLesson] = useState(null);
   const [enrollment, setEnrollment] = useState(null);
+  const [completedLessonIds, setCompletedLessonIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -226,7 +227,10 @@ export default function StudyRoom() {
   }
 
   function handleVideoEnded() {
-    if (activeLesson?.id) clearStoredLessonPos(activeLesson.id);
+    if (!activeLesson?.id) return;
+    clearStoredLessonPos(activeLesson.id);
+    // إكمال تلقائي عند انتهاء الفيديو (idempotent في الخادم).
+    handleToggleComplete(activeLesson.id, true);
   }
 
   // عند أول تشغيل لهذا الدرس: سجّله كآخر درس تمّت مشاهدته في سجل التسجيل.
@@ -239,12 +243,36 @@ export default function StudyRoom() {
     progressReportedRef.current = true;
     api
       .put(`/enrollments/${enrollment.id}/progress`, {
-        progressPercentage: enrollment.progressPercentage ?? 0,
         lastWatchedLessonId: Number(activeLesson.id),
       })
       .then((res) => setEnrollment(res.data))
       .catch(() => {
         progressReportedRef.current = false;
+      });
+  }
+
+  // تبديل حالة إكمال درس. تحديث تفاؤلي فوري ثم مزامنة مع رد الخادم.
+  function handleToggleComplete(targetLessonId, nextCompleted) {
+    setCompletedLessonIds((ids) =>
+      nextCompleted
+        ? Array.from(new Set([...ids, targetLessonId]))
+        : ids.filter((id) => String(id) !== String(targetLessonId))
+    );
+    api
+      .post(
+        `/lessons/${targetLessonId}/complete`,
+        { completed: nextCompleted },
+        { params: { userId: Number(getCurrentUserId()) } }
+      )
+      .then((res) => setEnrollment(res.data))
+      .catch(() => {
+        notify.error('تعذر تحديث حالة الدرس');
+        // تراجع عن التحديث التفاؤلي
+        setCompletedLessonIds((ids) =>
+          nextCompleted
+            ? ids.filter((id) => String(id) !== String(targetLessonId))
+            : Array.from(new Set([...ids, targetLessonId]))
+        );
       });
   }
 
@@ -294,6 +322,16 @@ export default function StudyRoom() {
           console.warn('Failed to load enrollment record', e);
         }
 
+        let completedIds = [];
+        try {
+          const progressResponse = await api.get('/lessons/progress', {
+            params: { userId: Number(getCurrentUserId()), courseId },
+          });
+          completedIds = progressResponse.data?.completedLessonIds || [];
+        } catch (e) {
+          console.warn('Failed to load lesson completion state', e);
+        }
+
         let fetchedMessages = [];
         try {
           const currentUserId = getCurrentUserId();
@@ -318,6 +356,7 @@ export default function StudyRoom() {
           setLessons(siblingLessons);
           setCourse(courseDetails);
           setEnrollment(enrollmentRecord);
+          setCompletedLessonIds(completedIds);
           setMessages(fetchedMessages.length > 0 ? fetchedMessages : [WELCOME_MESSAGE]);
           setLoading(false);
         }
@@ -329,6 +368,7 @@ export default function StudyRoom() {
           setLessons([]);
           setCourse(null);
           setEnrollment(null);
+          setCompletedLessonIds([]);
           setLoading(false);
         }
       }
@@ -631,6 +671,8 @@ export default function StudyRoom() {
           lessons={lessons}
           activeLessonId={lessonId}
           lastWatchedLessonId={enrollment?.lastWatchedLesson?.id ?? null}
+          completedLessonIds={completedLessonIds}
+          onToggleComplete={handleToggleComplete}
           loading={loading}
           onNavigate={navigateToLesson}
         />

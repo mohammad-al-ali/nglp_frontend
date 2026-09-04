@@ -249,6 +249,118 @@ export function formatDuration(totalSeconds) {
   return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+/** وقت التعلم بصيغة عربية مختصرة: "3 س 20 د" / "20 د" / "أقل من دقيقة". */
+export function formatLearningTime(totalSeconds) {
+  const total = Math.max(0, Math.floor(totalSeconds || 0));
+  if (total < 60) return 'أقل من دقيقة';
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (hours > 0) return minutes > 0 ? `${hours} س ${minutes} د` : `${hours} س`;
+  return `${minutes} د`;
+}
+
+/** "منذ ..." نسبي بالعربية. يقبل ISO string أو Date. */
+export function timeAgo(value) {
+  if (!value) return '';
+  const then = new Date(value).getTime();
+  if (Number.isNaN(then)) return '';
+  const diffSec = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (diffSec < 60) return 'الآن';
+  const min = Math.floor(diffSec / 60);
+  if (min < 60) return `منذ ${min} د`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `منذ ${hr} س`;
+  const day = Math.floor(hr / 24);
+  if (day < 30) return `منذ ${day} يوم`;
+  const month = Math.floor(day / 30);
+  if (month < 12) return `منذ ${month} شهر`;
+  return `منذ ${Math.floor(month / 12)} سنة`;
+}
+
+function num(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function normalizeDashboardCourse(c = {}) {
+  return {
+    courseId: c.courseId,
+    title: c.title || 'كورس غير معنون',
+    description: c.description || 'لا يوجد وصف تفصيلي متوفر حالياً.',
+    category: c.category || 'تصنيف عام',
+    imageUrl: resolveMediaUrl(c.imageUrl) || null,
+    teacherName: c.teacherName || null,
+    progressPercent: num(c.progressPercent),
+    completedLessons: num(c.completedLessons),
+    totalLessons: num(c.totalLessons),
+    lastWatchedLessonId: c.lastWatchedLessonId || null,
+  };
+}
+
+/** يطبّع حمولة GET /students/{id}/dashboard مع تأمين كل رقم إلى 0. */
+export function normalizeDashboard(data = {}) {
+  const s = data.summary || {};
+  const qp = data.quizPerformance || {};
+  return {
+    summary: {
+      enrolledCount: num(s.enrolledCount),
+      inProgressCount: num(s.inProgressCount),
+      completedCount: num(s.completedCount),
+      overallProgressPercent: num(s.overallProgressPercent),
+      lessonsCompleted: num(s.lessonsCompleted),
+      totalLessons: num(s.totalLessons),
+      totalWatchTimeSeconds: num(s.totalWatchTimeSeconds),
+      enrolledContentSeconds: num(s.enrolledContentSeconds),
+      quizzesTaken: num(s.quizzesTaken),
+      avgQuizScorePercent: num(s.avgQuizScorePercent),
+      aiQuestionsAsked: num(s.aiQuestionsAsked),
+      aiSessions: num(s.aiSessions),
+      memberSince: s.memberSince || null,
+    },
+    resumeLearning: data.resumeLearning
+      ? {
+          courseId: data.resumeLearning.courseId,
+          courseTitle: data.resumeLearning.courseTitle || 'كورس تعليمي',
+          lessonId: data.resumeLearning.lessonId || null,
+          lessonTitle: data.resumeLearning.lessonTitle || 'الدرس التالي',
+          coursePercent: num(data.resumeLearning.coursePercent),
+        }
+      : null,
+    courses: (data.courses || []).map(normalizeDashboardCourse),
+    recentActivity: (data.recentActivity || []).map((a) => ({
+      type: a.type || 'ENROLLED',
+      title: a.title || '',
+      courseTitle: a.courseTitle || '',
+      timestamp: a.timestamp || null,
+      link: a.link || null,
+    })),
+    quizPerformance: {
+      totalAttempts: num(qp.totalAttempts),
+      avgScorePercent: num(qp.avgScorePercent),
+      recent: (qp.recent || []).map((r) => ({
+        quizId: r.quizId,
+        quizTitle: r.quizTitle || 'اختبار',
+        courseTitle: r.courseTitle || '',
+        scorePercent: num(r.scorePercent),
+        score: num(r.score),
+        maxScore: num(r.maxScore),
+        submittedAt: r.submittedAt || null,
+        link: r.link || null,
+      })),
+    },
+    recommendations: (data.recommendations || []).map((c) => ({
+      courseId: c.courseId,
+      title: c.title || 'كورس غير معنون',
+      description: c.description || 'لا يوجد وصف تفصيلي متوفر حالياً.',
+      category: c.category || 'تصنيف عام',
+      imageUrl: resolveMediaUrl(c.imageUrl) || null,
+      teacherName: c.teacherName || null,
+      lessonsCount: num(c.lessonsCount),
+      sameCategory: Boolean(c.sameCategory),
+    })),
+  };
+}
+
 export function resolveMediaUrl(url) {
   if (!url) return '';
   if (/^https?:\/\//i.test(url)) return url;
