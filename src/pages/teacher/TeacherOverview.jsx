@@ -44,7 +44,7 @@ export default function TeacherOverview() {
       setDeleteError(null);
     } catch (err) {
       console.warn('Failed to delete course from backend.', err);
-      setDeleteError(`تعذّر حذف الكورس "${deleteTarget.title}". تأكد أنه لا يحتوي على دروس منشورة ثم حاول مرة أخرى.`);
+      setDeleteError(err.friendlyMessage || `تعذّر حذف الكورس "${deleteTarget.title}".`);
     }
   }
 
@@ -154,7 +154,7 @@ export default function TeacherOverview() {
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="حذف الكورس"
-        description={deleteTarget ? `هل أنت متأكد من رغبتك في حذف الكورس "${deleteTarget.title}"؟ سيؤدي ذلك إلى إزالة الكورس وجميع دروسه نهائياً.` : ''}
+        description={deleteTarget ? `هل أنت متأكد من رغبتك في حذف الكورس "${deleteTarget.title}"؟ لا يمكن حذف كورس يحتوي على دروس أو طلاب مسجّلين — احذف الدروس وأزل التسجيلات أولاً.` : ''}
         confirmLabel="حذف"
         destructive
         onConfirm={handleConfirmDelete}
