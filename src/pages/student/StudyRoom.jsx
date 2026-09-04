@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Loader2, ArrowRight, ChevronLeft, PanelLeft, PanelRight, PanelBottom, AlertTriangle, RefreshCw } from 'lucide-react';
 import api, { API_BASE_URL, getCurrentUserId } from '../../services/api';
-import { normalizeCourse, normalizeLesson } from '../../utils/constants';
+import { normalizeCourse, normalizeLesson, formatDuration } from '../../utils/constants';
+import { useLessonDurations, applyLessonDuration } from '../../hooks/useLessonDurations';
+import { notify } from '@/lib/toast';
 import { useFetchProviders, useFetchUserSettings, useUpdateUserSettings } from '../../hooks/useQuiz';
 import { useLessonTranscript } from '../../hooks/useLessonTranscript';
 import { Button } from '@/components/ui/button';
@@ -17,6 +19,7 @@ const WELCOME_MESSAGE = {
 };
 
 const TRANSCRIPT_LANG_KEY = 'nglp.transcriptLang';
+const LESSON_POS_KEY = (lessonId) => `nglp.lessonPos.${lessonId}`;
 
 function readStoredTranscriptLang() {
   try {
@@ -24,6 +27,31 @@ function readStoredTranscriptLang() {
     return v === 'ar' || v === 'en' ? v : 'ar';
   } catch {
     return 'ar';
+  }
+}
+
+function readStoredLessonPos(lessonId) {
+  try {
+    const v = Number(localStorage.getItem(LESSON_POS_KEY(lessonId)));
+    return Number.isFinite(v) && v > 0 ? v : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeStoredLessonPos(lessonId, seconds) {
+  try {
+    localStorage.setItem(LESSON_POS_KEY(lessonId), String(Math.floor(seconds)));
+  } catch {
+    /* التخزين المحلي غير متاح — لا يؤثر على العمل */
+  }
+}
+
+function clearStoredLessonPos(lessonId) {
+  try {
+    localStorage.removeItem(LESSON_POS_KEY(lessonId));
+  } catch {
+    /* تجاهل */
   }
 }
 
@@ -55,10 +83,12 @@ export default function StudyRoom() {
   const messagesEndRef = useRef(null);
   const videoRef = useRef(null);
   const chatInputRef = useRef(null);
+  const progressReportedRef = useRef(false);
 
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [activeLesson, setActiveLesson] = useState(null);
+  const [enrollment, setEnrollment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -90,6 +120,7 @@ export default function StudyRoom() {
   // إعادة ضبط موضع التشغيل عند تبديل الدرس (الفيديو نفسه يُعاد تركيبه عبر key)
   useEffect(() => {
     setCurrentSecond(0);
+    progressReportedRef.current = false;
   }, [lessonId]);
 
   useEffect(() => {
@@ -136,6 +167,95 @@ export default function StudyRoom() {
     }
   }
 
+  // الدرس السابق/التالي حسب ترتيب القائمة (للتنقّل من لوحة الفيديو)
+  const { prevLessonId, nextLessonId } = useMemo(() => {
+    const idx = lessons.findIndex((l) => String(l.id) === String(lessonId));
+    if (idx === -1) return { prevLessonId: null, nextLessonId: null };
+    return {
+      prevLessonId: idx > 0 ? lessons[idx - 1].id : null,
+      nextLessonId: idx < lessons.length - 1 ? lessons[idx + 1].id : null,
+    };
+  }, [lessons, lessonId]);
+
+  function navigateToLesson(id) {
+    navigate(`/study-room/${courseId}/lesson/${id}`);
+  }
+
+  // عند معرفة مدة الفيديو: (1) استئناف من آخر موضع محفوظ، (2) self-heal للمدة
+  // في قاعدة البيانات إن كانت مجهولة (درس رُفع قبل استخراج المدة تلقائياً).
+  function handleLoadedMetadata(rawDuration) {
+    const duration = Number(rawDuration);
+    const video = videoRef.current;
+
+    if (video && Number.isFinite(duration) && duration > 0) {
+      const saved = readStoredLessonPos(activeLesson?.id);
+      if (saved > 5 && saved < duration - 10) {
+        video.currentTime = saved;
+      }
+    }
+
+    if (activeLesson && !activeLesson.durationSeconds && Number.isFinite(duration) && duration > 0) {
+      const rounded = Math.round(duration);
+      api
+        .post(`/lessons/${activeLesson.id}/duration`, { durationSeconds: rounded })
+        .then(() => {
+          setActiveLesson((current) =>
+            current ? { ...current, durationSeconds: rounded, duration: formatDuration(rounded) } : current
+          );
+          setLessons((rows) =>
+            rows.map((row) =>
+              String(row.id) === String(activeLesson.id)
+                ? { ...row, durationSeconds: rounded, duration: formatDuration(rounded) }
+                : row
+            )
+          );
+        })
+        .catch(() => {
+          /* أفضل جهد — لا نزعج الطالب إن فشل */
+        });
+    }
+  }
+
+  function handleVideoTimeUpdate(time) {
+    const seconds = Math.floor(time);
+    setCurrentSecond(seconds);
+    // حفظ موضع التشغيل كل 5 ثوانٍ فقط لتقليل الكتابة على localStorage
+    if (activeLesson?.id && seconds > 0 && seconds % 5 === 0) {
+      writeStoredLessonPos(activeLesson.id, seconds);
+    }
+  }
+
+  function handleVideoEnded() {
+    if (activeLesson?.id) clearStoredLessonPos(activeLesson.id);
+  }
+
+  // عند أول تشغيل لهذا الدرس: سجّله كآخر درس تمّت مشاهدته في سجل التسجيل.
+  function handleVideoPlay() {
+    if (progressReportedRef.current || !enrollment?.id || !activeLesson?.id) return;
+    if (String(enrollment.lastWatchedLesson?.id) === String(activeLesson.id)) {
+      progressReportedRef.current = true;
+      return;
+    }
+    progressReportedRef.current = true;
+    api
+      .put(`/enrollments/${enrollment.id}/progress`, {
+        progressPercentage: enrollment.progressPercentage ?? 0,
+        lastWatchedLessonId: Number(activeLesson.id),
+      })
+      .then((res) => setEnrollment(res.data))
+      .catch(() => {
+        progressReportedRef.current = false;
+      });
+  }
+
+  function handleRegenerateTranscript() {
+    if (!activeLesson?.id) return;
+    api
+      .post(`/lessons/${activeLesson.id}/transcript/regenerate`)
+      .then(() => notify.info('بدأ توليد التفريغ في الخلفية. راجع الدرس بعد دقيقة.'))
+      .catch(() => notify.error('تعذّر بدء توليد التفريغ حالياً.'));
+  }
+
   useEffect(() => {
     let isMounted = true;
 
@@ -163,6 +283,17 @@ export default function StudyRoom() {
           console.warn('Failed to load course details', e);
         }
 
+        let enrollmentRecord = null;
+        try {
+          const enrollmentResponse = await api.get('/enrollments', {
+            params: { userId: Number(getCurrentUserId()) },
+          });
+          enrollmentRecord =
+            enrollmentResponse.data?.find((en) => String(en.course?.id) === String(courseId)) || null;
+        } catch (e) {
+          console.warn('Failed to load enrollment record', e);
+        }
+
         let fetchedMessages = [];
         try {
           const currentUserId = getCurrentUserId();
@@ -186,6 +317,7 @@ export default function StudyRoom() {
           setActiveLesson(activeL);
           setLessons(siblingLessons);
           setCourse(courseDetails);
+          setEnrollment(enrollmentRecord);
           setMessages(fetchedMessages.length > 0 ? fetchedMessages : [WELCOME_MESSAGE]);
           setLoading(false);
         }
@@ -196,6 +328,7 @@ export default function StudyRoom() {
           setActiveLesson(null);
           setLessons([]);
           setCourse(null);
+          setEnrollment(null);
           setLoading(false);
         }
       }
@@ -211,6 +344,40 @@ export default function StudyRoom() {
     fetchProviders();
     fetchSettings(getCurrentUserId());
   }, []);
+
+  // اختصارات لوحة المفاتيح لطيّ/فتح اللوحات (بأسلوب محرّرات الأكواد).
+  // تُتجاهل أثناء الكتابة في حقول الإدخال (مثل محادثة المساعد الذكي).
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+
+      const key = e.key.toLowerCase();
+      if (key === 'b') {
+        e.preventDefault();
+        setShowLessons((v) => !v);
+      } else if (key === 'j') {
+        e.preventDefault();
+        setShowDetails((v) => !v);
+      } else if (key === '\\') {
+        e.preventDefault();
+        setShowTutor((v) => !v);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  // تعبئة مدد الدروس المجهولة في الـ Playlist من بيانات الفيديو الوصفية.
+  useLessonDurations(lessons, (lessonId, seconds) => {
+    setLessons((rows) => applyLessonDuration(rows, lessonId, seconds));
+    setActiveLesson((current) =>
+      current && String(current.id) === String(lessonId) && !(current.durationSeconds > 0)
+        ? { ...current, durationSeconds: seconds, duration: formatDuration(seconds) }
+        : current
+    );
+  });
 
   useEffect(() => {
     Promise.resolve().then(() => {
@@ -385,9 +552,9 @@ export default function StudyRoom() {
            * edge), so that order is what renders left-to-right on screen as
            * left / bottom / right, matching the icons' own handedness.
            */}
-          <HeaderToggleButton active={showTutor} onClick={() => setShowTutor(!showTutor)} title="الشريط الجانبي الأيمن — مساعد الذكاء الاصطناعي" icon={PanelRight} />
-          <HeaderToggleButton active={showDetails} onClick={() => setShowDetails(!showDetails)} title="اللوحة السفلية — تفاصيل الدرس والتفريغ النصي" icon={PanelBottom} />
-          <HeaderToggleButton active={showLessons} onClick={() => setShowLessons(!showLessons)} title="الشريط الجانبي الأيسر — قائمة الدروس" icon={PanelLeft} />
+          <HeaderToggleButton active={showTutor} onClick={() => setShowTutor(!showTutor)} title="الشريط الجانبي الأيمن — مساعد الذكاء الاصطناعي (Ctrl+\)" icon={PanelRight} />
+          <HeaderToggleButton active={showDetails} onClick={() => setShowDetails(!showDetails)} title="اللوحة السفلية — تفاصيل الدرس والتفريغ النصي (Ctrl+J)" icon={PanelBottom} />
+          <HeaderToggleButton active={showLessons} onClick={() => setShowLessons(!showLessons)} title="الشريط الجانبي الأيسر — قائمة الدروس (Ctrl+B)" icon={PanelLeft} />
 
           <span className="mx-1.5 h-5 w-px bg-border" />
 
@@ -433,7 +600,13 @@ export default function StudyRoom() {
           courseId={courseId}
           lessonId={lessonId}
           onSmartPrompt={handleSmartPrompt}
-          onTimeUpdate={(t) => setCurrentSecond(Math.floor(t))}
+          onTimeUpdate={handleVideoTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onPlay={handleVideoPlay}
+          onEnded={handleVideoEnded}
+          prevLessonId={prevLessonId}
+          nextLessonId={nextLessonId}
+          onNavigateLesson={navigateToLesson}
           transcript={{
             segments: transcript?.segments ?? [],
             activeIndex: activeTranscriptIndex,
@@ -441,6 +614,7 @@ export default function StudyRoom() {
             language: transcriptLang,
             availableLanguages: transcript?.availableLanguages ?? [],
             onLanguageChange: handleTranscriptLangChange,
+            onGenerate: handleRegenerateTranscript,
             loading: transcriptLoading,
             error: transcriptError,
           }}
@@ -451,7 +625,9 @@ export default function StudyRoom() {
           onClose={() => setShowLessons(false)}
           lessons={lessons}
           activeLessonId={lessonId}
-          onNavigate={(id) => navigate(`/study-room/${courseId}/lesson/${id}`)}
+          lastWatchedLessonId={enrollment?.lastWatchedLesson?.id ?? null}
+          loading={loading}
+          onNavigate={navigateToLesson}
         />
       </div>
     </div>

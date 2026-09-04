@@ -13,6 +13,7 @@ import EmptyState from '@/components/ui/empty-state';
 import BackLink from '@/components/ui/back-link';
 import { cn } from '@/lib/utils';
 import { normalizeCourse, normalizeLesson } from '../utils/constants';
+import { useLessonDurations, applyLessonDuration } from '../hooks/useLessonDurations';
 import { notify } from '@/lib/toast';
 import { SUCCESS } from '@/lib/messages';
 
@@ -46,6 +47,10 @@ export default function CourseDetails() {
   const [enrollStatus, setEnrollStatus] = useState('idle'); // idle | saving | enrolled | error
   const [pageStatus, setPageStatus] = useState('loading'); // loading | ready | error
   const [pageError, setPageError] = useState(null);
+
+  useLessonDurations(lessons, (lessonId, seconds) => {
+    setLessons((current) => applyLessonDuration(current, lessonId, seconds));
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -205,7 +210,9 @@ export default function CourseDetails() {
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-2.5">
-                        <span className="text-xs font-bold text-muted-foreground">{lesson.duration || '00:00'}</span>
+                        <span className="text-xs font-bold text-muted-foreground">
+                          {lesson.durationSeconds > 0 ? lesson.duration : '—'}
+                        </span>
                         {!isLinkable && <Lock className="size-3.5 text-muted-foreground" title="يتطلب التسجيل في الكورس" />}
                       </div>
                     </div>

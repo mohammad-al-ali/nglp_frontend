@@ -18,6 +18,7 @@ import EmptyState from '@/components/ui/empty-state';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import { useUploadQueue } from '../../hooks/useUploadQueue';
 import { normalizeCourse, normalizeLesson } from '../../utils/constants';
+import { useLessonDurations, applyLessonDuration } from '../../hooks/useLessonDurations';
 import { notify } from '@/lib/toast';
 import { SUCCESS } from '@/lib/messages';
 
@@ -43,6 +44,11 @@ export default function ManageLessons() {
 
   const [teacherCourses, setTeacherCourses] = useState([]);
   const [pickerStatus, setPickerStatus] = useState('loading'); // loading | ready | error
+
+  // تعبئة مدد الدروس المجهولة من بيانات الفيديو الوصفية (وحفظها في الخادم).
+  useLessonDurations(lessons, (lessonId, seconds) => {
+    setLessons((current) => applyLessonDuration(current, lessonId, seconds));
+  });
 
   useEffect(() => {
     if (courseId) return;
@@ -341,7 +347,9 @@ export default function ManageLessons() {
                           )}
                           <div className="min-w-0">
                             <strong className="block truncate text-sm font-semibold text-foreground">{lesson.title}</strong>
-                            <span className="text-xs text-muted-foreground">مدة العرض: {lesson.duration}</span>
+                            <span className="text-xs text-muted-foreground">
+                              مدة العرض: {lesson.durationSeconds > 0 ? lesson.duration : '—'}
+                            </span>
                           </div>
                         </div>
 
