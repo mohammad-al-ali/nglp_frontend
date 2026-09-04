@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Loader2, ArrowRight, ChevronLeft, PanelLeft, PanelRight, PanelBottom, AlertTriangle, RefreshCw } from 'lucide-react';
 import api, { API_BASE_URL, getCurrentUserId } from '../../services/api';
 import { normalizeCourse, normalizeLesson } from '../../utils/constants';
 import { useFetchProviders, useFetchUserSettings, useUpdateUserSettings } from '../../hooks/useQuiz';
+import { useLessonTranscript } from '../../hooks/useLessonTranscript';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import AiTutorPanel from './components/AiTutorPanel';
@@ -14,6 +15,38 @@ const WELCOME_MESSAGE = {
   role: 'assistant',
   text: 'أهلاً بك! أنا مساعدك التعليمي الذكي. كيف يمكنني مساعدتك في فهم هذا الدرس أو شرح الكود البرمجي اليوم؟',
 };
+
+const TRANSCRIPT_LANG_KEY = 'nglp.transcriptLang';
+
+function readStoredTranscriptLang() {
+  try {
+    const v = localStorage.getItem(TRANSCRIPT_LANG_KEY);
+    return v === 'ar' || v === 'en' ? v : 'ar';
+  } catch {
+    return 'ar';
+  }
+}
+
+/**
+ * حارس أخير على الواجهة: يزيل أي سياق تقني محقون أو وسوم XML داخلية قد تكون
+ * بقيت في رسائل قديمة مخزّنة قبل تنظيف الخادم لها. الخادم ينظّف المصدر الآن،
+ * وهذا فقط لضمان ألا يرى الطالب رموزاً غريبة إطلاقاً.
+ */
+function cleanMessageText(raw) {
+  if (!raw) return '';
+  let text = String(raw);
+
+  const questionMatch = text.match(/<STUDENT_QUESTION>\s*([\s\S]*?)\s*<\/STUDENT_QUESTION>/);
+  if (questionMatch) {
+    text = questionMatch[1];
+  } else {
+    text = text.replace(/^\s*Student Question:\s*/, '');
+    text = text.replace(/\n\s*\[(?:Video Transcript Context|System Info)\b[\s\S]*$/, '');
+  }
+
+  text = text.replace(/<\/?(?:SYSTEM_METADATA|TRANSCRIPT_CONTEXT|SYSTEM_INFO|STUDENT_QUESTION)>/g, '');
+  return text.trim();
+}
 
 export default function StudyRoom() {
   const { courseId, lessonId } = useParams();
@@ -45,9 +78,63 @@ export default function StudyRoom() {
 
   const [capturedTimestamp, setCapturedTimestamp] = useState(0);
 
+  // --- تفريغ الفيديو المتزامن ---
+  const [currentSecond, setCurrentSecond] = useState(0);
+  const [transcriptLang, setTranscriptLang] = useState(readStoredTranscriptLang);
+  const { transcript, loading: transcriptLoading, error: transcriptError, fetchTranscript } = useLessonTranscript();
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // إعادة ضبط موضع التشغيل عند تبديل الدرس (الفيديو نفسه يُعاد تركيبه عبر key)
+  useEffect(() => {
+    setCurrentSecond(0);
+  }, [lessonId]);
+
+  useEffect(() => {
+    if (activeLesson?.id) {
+      fetchTranscript(activeLesson.id, transcriptLang);
+    }
+  }, [activeLesson?.id, transcriptLang, fetchTranscript]);
+
+  // إن لم تتوفر اللغة المختارة لهذا الدرس بينما تتوفر أخرى، اعرض المتاحة
+  // (دون تغيير التفضيل المحفوظ — يبقى ساري المفعول في الدروس التي تدعمه).
+  useEffect(() => {
+    const langs = transcript?.availableLanguages;
+    if (transcript && !transcript.available && langs?.length > 0 && !langs.includes(transcriptLang)) {
+      setTranscriptLang(langs[0]);
+    }
+  }, [transcript, transcriptLang]);
+
+  // المقطع النشط = آخر مقطع بدأ عند/قبل الثانية الحالية (يتحمّل الفجوات بين المقاطع)
+  const activeTranscriptIndex = useMemo(() => {
+    const segs = transcript?.segments;
+    if (!segs || segs.length === 0) return -1;
+    let idx = -1;
+    for (let i = 0; i < segs.length; i += 1) {
+      if (segs[i].startSecond <= currentSecond) idx = i;
+      else break;
+    }
+    return idx;
+  }, [transcript, currentSecond]);
+
+  function handleTranscriptSeek(startSecond) {
+    if (videoRef.current) {
+      videoRef.current.currentTime = startSecond;
+      const played = videoRef.current.play();
+      if (played?.catch) played.catch(() => {});
+    }
+  }
+
+  function handleTranscriptLangChange(lang) {
+    setTranscriptLang(lang);
+    try {
+      localStorage.setItem(TRANSCRIPT_LANG_KEY, lang);
+    } catch {
+      /* التخزين المحلي غير متاح — لا يؤثر على العمل */
+    }
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -84,10 +171,12 @@ export default function StudyRoom() {
           });
 
           if (historyResponse.data?.messages?.length > 0) {
-            fetchedMessages = historyResponse.data.messages.map((msg) => ({
-              role: msg.senderType === 'USER' ? 'student' : 'assistant',
-              text: msg.content,
-            }));
+            fetchedMessages = historyResponse.data.messages
+              .map((msg) => ({
+                role: msg.senderType === 'USER' ? 'student' : 'assistant',
+                text: cleanMessageText(msg.content),
+              }))
+              .filter((msg) => msg.text.length > 0);
           }
         } catch (e) {
           console.warn('Failed to fetch conversation history from backend:', e);
@@ -175,6 +264,7 @@ export default function StudyRoom() {
       const response = await fetch(`${API_BASE_URL}/ai/messages/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           userId: Number(getCurrentUserId()),
           lessonId: Number(activeLesson.id),
@@ -183,51 +273,52 @@ export default function StudyRoom() {
         }),
       });
 
-      if (!response.ok) {
+      if (!response.ok || !response.body) {
         throw new Error('فشل في الاتصال بمزود البث اللحظي للذكاء الاصطناعي.');
       }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let done = false;
+      let buffer = '';
       let accumulatedText = '';
 
       setMessages((current) => [...current, { role: 'assistant', text: '' }]);
 
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        done = readerDone;
-        if (value) {
-          const chunk = decoder.decode(value, { stream: !done });
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (trimmedLine.startsWith('data:')) {
-              const startIndex = line.indexOf('data:') + 5;
-              let cleanChunk = line.substring(startIndex);
+      // بروتوكول SSE: الأحداث مفصولة بسطر فارغ، وكل حدث قد يحوي عدة أسطر "data:".
+      // نجمع الأسطر حتى يكتمل الحدث لأن قراءة الشبكة الواحدة قد تقطع سطراً في منتصفه.
+      const applyEvent = (rawEvent) => {
+        // Spring يكتب الأسطر بالشكل «data:<الحمولة>» دون مسافة بعد النقطتين،
+        // فلا نقتطع أي مسافة — قد تكون المسافة البادئة جزءاً حقيقياً من مقطع الرد.
+        const dataLines = rawEvent
+          .split('\n')
+          .filter((line) => line.startsWith('data:'))
+          .map((line) => line.slice(5));
 
-              if (cleanChunk.trim() === '[DONE]') {
-                break;
-              }
-              if (cleanChunk) {
-                const trimmedChunk = cleanChunk.trim();
-                if (trimmedChunk.startsWith('"') && trimmedChunk.endsWith('"') && trimmedChunk.length > 1) {
-                  cleanChunk = cleanChunk.replace(trimmedChunk, trimmedChunk.substring(1, trimmedChunk.length - 1));
-                }
-                cleanChunk = cleanChunk.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+        if (dataLines.length === 0) return;
+        const payload = dataLines.join('\n');
+        if (payload === '[DONE]') return;
 
-                accumulatedText += cleanChunk;
-                setMessages((current) => {
-                  const next = [...current];
-                  if (next.length > 0) {
-                    next[next.length - 1] = { role: 'assistant', text: accumulatedText };
-                  }
-                  return next;
-                });
-              }
-            }
-          }
+        accumulatedText += payload;
+        setMessages((current) => {
+          const next = [...current];
+          next[next.length - 1] = { role: 'assistant', text: accumulatedText };
+          return next;
+        });
+      };
+
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+
+        let separatorIndex;
+        while ((separatorIndex = buffer.indexOf('\n\n')) !== -1) {
+          applyEvent(buffer.slice(0, separatorIndex));
+          buffer = buffer.slice(separatorIndex + 2);
         }
+      }
+      if (buffer.trim()) {
+        applyEvent(buffer);
       }
     } catch (err) {
       console.warn('AI Chat streaming request failed.', err);
@@ -342,6 +433,17 @@ export default function StudyRoom() {
           courseId={courseId}
           lessonId={lessonId}
           onSmartPrompt={handleSmartPrompt}
+          onTimeUpdate={(t) => setCurrentSecond(Math.floor(t))}
+          transcript={{
+            segments: transcript?.segments ?? [],
+            activeIndex: activeTranscriptIndex,
+            onSeek: handleTranscriptSeek,
+            language: transcriptLang,
+            availableLanguages: transcript?.availableLanguages ?? [],
+            onLanguageChange: handleTranscriptLangChange,
+            loading: transcriptLoading,
+            error: transcriptError,
+          }}
         />
 
         <LessonNavPanel

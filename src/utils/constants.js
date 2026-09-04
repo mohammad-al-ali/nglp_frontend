@@ -223,7 +223,7 @@ export function normalizeLesson(lesson) {
     duration: lesson.durationSeconds ? formatDuration(lesson.durationSeconds) : '00:00',
     durationSeconds: lesson.durationSeconds || 0,
     description: lesson.description || 'تفاصيل الدرس التعليمي ستظهر هنا قريباً.',
-    transcript: lesson.transcript || 'التفريغ النصي للفيديو سيظهر هنا بعد انتهاء عملية المعالجة.',
+    // التفريغ النصي يُجلب الآن عبر endpoint مستقل (GET /lessons/:id/transcript) لدعم اللغتين والتزامن.
     videoUrl: lesson.videoUrl || '',
     imageUrl: resolveMediaUrl(lesson.imageUrl) || null,
   };

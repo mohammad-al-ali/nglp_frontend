@@ -1,9 +1,20 @@
 import { Link } from 'react-router-dom';
-import { FileText, AlignLeft, Sparkles, ChevronUp, Video } from 'lucide-react';
+import { FileText, Sparkles, ChevronUp, Video } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { resolveMediaUrl } from '../../../utils/constants';
+import LessonTranscriptPanel from './LessonTranscriptPanel';
 
-export default function LessonVideoPane({ activeLesson, videoRef, showDetails, onToggleDetails, courseId, lessonId, onSmartPrompt }) {
+export default function LessonVideoPane({
+  activeLesson,
+  videoRef,
+  showDetails,
+  onToggleDetails,
+  courseId,
+  lessonId,
+  onSmartPrompt,
+  onTimeUpdate,
+  transcript,
+}) {
   return (
     <main className="flex min-w-0 flex-1 flex-col gap-5 overflow-y-auto p-6">
       {/*
@@ -30,6 +41,7 @@ export default function LessonVideoPane({ activeLesson, videoRef, showDetails, o
             src={resolveMediaUrl(activeLesson.videoUrl)}
             controls
             preload="metadata"
+            onTimeUpdate={(e) => onTimeUpdate?.(e.currentTarget.currentTime)}
             // عمداً بلا aspect-ratio هنا: على عنصر <video> فإن قيمة aspect-ratio
             // الصريحة (غير auto) تَغلب على النسبة الحقيقية للفيديو بدل أن تكون
             // احتياطاً قبل معرفتها فقط — جُرّب هذا فعلياً مع فيديو عمودي حقيقي
@@ -83,14 +95,7 @@ export default function LessonVideoPane({ activeLesson, videoRef, showDetails, o
           <div className="flex flex-col gap-4.5 p-6">
             <p className="whitespace-pre-line text-sm leading-relaxed text-foreground">{activeLesson.description || 'لا يوجد وصف تفصيلي متوفر لهذا الدرس.'}</p>
 
-            <div className="border-t border-border pt-4">
-              <h4 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-foreground">
-                <AlignLeft className="size-4" /> تفريغ الفيديو التلقائي
-              </h4>
-              <div className="max-h-40 overflow-y-auto rounded-md border border-border bg-surface-raised p-4 text-sm leading-loose text-foreground">
-                {activeLesson.transcript || 'لم يتم توليد تفريغ نصي تلقائي لهذا الفيديو بعد.'}
-              </div>
-            </div>
+            <LessonTranscriptPanel {...transcript} />
           </div>
         </Card>
       )}
