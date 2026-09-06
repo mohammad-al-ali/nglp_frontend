@@ -34,6 +34,7 @@ export const SUCCESS = {
   USER_DELETED: 'تم حذف المستخدم',
 
   ENROLLED: 'تم تسجيلك في الكورس بنجاح',
+  UNENROLLED: 'تم إلغاء تسجيلك في الكورس',
   PROGRESS_SAVED: 'تم حفظ تقدّمك',
 };
 

@@ -263,6 +263,27 @@ export function useFetchAttempts() {
   return { attempts, loading, error, fetchAttempts };
 }
 
+/** ملخّص أداء اختبار واحد للمعلم — GET /quizzes/:id/stats. */
+export function useFetchQuizStats() {
+  const [statsByQuiz, setStatsByQuiz] = useState({});
+  const [loadingIds, setLoadingIds] = useState({});
+
+  const fetchStats = useCallback(async (quizId) => {
+    if (!quizId || statsByQuiz[quizId]) return;
+    setLoadingIds((m) => ({ ...m, [quizId]: true }));
+    try {
+      const res = await api.get(`/quizzes/${quizId}/stats`);
+      setStatsByQuiz((m) => ({ ...m, [quizId]: res.data }));
+    } catch {
+      /* أفضل جهد — لا نعطّل قائمة الاختبارات إن فشل الإحصاء */
+    } finally {
+      setLoadingIds((m) => ({ ...m, [quizId]: false }));
+    }
+  }, [statsByQuiz]);
+
+  return { statsByQuiz, loadingIds, fetchStats };
+}
+
 export function useFetchProviders() {
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(false);

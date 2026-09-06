@@ -25,6 +25,7 @@ import TeacherOverview from './pages/teacher/TeacherOverview';
 import CourseBuilder from './pages/teacher/CourseBuilder';
 import ManageCourse from './pages/teacher/ManageCourse';
 import ManageLessons from './pages/teacher/ManageLessons';
+import CourseStudents from './pages/teacher/CourseStudents';
 import CategoriesManager from './pages/admin/CategoriesManager';
 import UsersManagement from './pages/admin/UsersManagement';
 import QuizManager from './pages/teacher/QuizManager';
@@ -98,6 +99,14 @@ function App() {
             element={
               <RoleRoute allowedRoles={[ROLE_TEACHER]}>
                 <ManageLessons />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/teacher/course/:courseId/students"
+            element={
+              <RoleRoute allowedRoles={[ROLE_TEACHER]}>
+                <CourseStudents />
               </RoleRoute>
             }
           />

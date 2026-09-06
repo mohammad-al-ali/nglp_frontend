@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import EmptyState from '@/components/ui/empty-state';
 import BackLink from '@/components/ui/back-link';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 import { normalizeCourse, normalizeLesson } from '../utils/constants';
 import { useLessonDurations, applyLessonDuration } from '../hooks/useLessonDurations';
@@ -47,6 +48,7 @@ export default function CourseDetails() {
   const [enrollStatus, setEnrollStatus] = useState('idle'); // idle | saving | enrolled | error
   const [pageStatus, setPageStatus] = useState('loading'); // loading | ready | error
   const [pageError, setPageError] = useState(null);
+  const [showCancel, setShowCancel] = useState(false);
 
   useLessonDurations(lessons, (lessonId, seconds) => {
     setLessons((current) => applyLessonDuration(current, lessonId, seconds));
@@ -117,6 +119,18 @@ export default function CourseDetails() {
       setTimeout(() => navigate('/dashboard'), 1200);
     } catch (err) {
       setEnrollStatus('error');
+      notify.error(err.friendlyMessage);
+    }
+  }
+
+  async function cancelEnrollment() {
+    try {
+      await api.delete('/enrollments', {
+        params: { userId: Number(getCurrentUserId()), courseId: Number(courseId) },
+      });
+      notify.success(SUCCESS.UNENROLLED);
+      navigate('/dashboard');
+    } catch (err) {
       notify.error(err.friendlyMessage);
     }
   }
@@ -290,6 +304,16 @@ export default function CourseDetails() {
                   عند الضغط على "سجل الآن" سيتم إضافتك فوراً وتوجيهك إلى مساحة التعلم.
                 </p>
               )}
+
+              {enrollStatus === 'enrolled' && (
+                <button
+                  type="button"
+                  onClick={() => setShowCancel(true)}
+                  className="mt-3 w-full text-center text-xs font-semibold text-error underline-offset-4 hover:underline"
+                >
+                  إلغاء التسجيل في الكورس
+                </button>
+              )}
             </div>
 
             <BackLink to="/catalog" className="w-full justify-center">
@@ -298,6 +322,16 @@ export default function CourseDetails() {
           </Card>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showCancel}
+        onOpenChange={setShowCancel}
+        destructive
+        title="إلغاء التسجيل في الكورس"
+        description="سيتم حذف تقدّمك في دروس هذا الكورس. يمكنك التسجيل مجدداً لاحقاً لكن سيبدأ تقدّمك من الصفر."
+        confirmLabel="نعم، ألغِ التسجيل"
+        onConfirm={cancelEnrollment}
+      />
     </PageShell>
   );
 }

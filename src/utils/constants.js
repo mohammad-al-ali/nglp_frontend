@@ -361,6 +361,83 @@ export function normalizeDashboard(data = {}) {
   };
 }
 
+/** يطبّع حمولة GET /teachers/{id}/dashboard. */
+export function normalizeTeacherDashboard(data = {}) {
+  const s = data.summary || {};
+  return {
+    summary: {
+      coursesCount: num(s.coursesCount),
+      totalStudents: num(s.totalStudents),
+      avgCompletionPercent: num(s.avgCompletionPercent),
+      quizzesPublished: num(s.quizzesPublished),
+      quizzesTaken: num(s.quizzesTaken),
+      avgQuizScorePercent: num(s.avgQuizScorePercent),
+      atRiskStudentsCount: num(s.atRiskStudentsCount),
+      memberSince: s.memberSince || null,
+    },
+    courses: (data.courses || []).map((c) => ({
+      courseId: c.courseId,
+      title: c.title || 'كورس غير معنون',
+      category: c.category || 'تصنيف عام',
+      imageUrl: resolveMediaUrl(c.imageUrl) || null,
+      studentsCount: num(c.studentsCount),
+      lessonsCount: num(c.lessonsCount),
+      avgCompletionPercent: num(c.avgCompletionPercent),
+      atRiskCount: num(c.atRiskCount),
+    })),
+    recentActivity: (data.recentActivity || []).map((a) => ({
+      type: a.type || 'ENROLLED',
+      title: a.title || '',
+      courseTitle: a.courseTitle || '',
+      studentName: a.studentName || '',
+      timestamp: a.timestamp || null,
+      link: a.link || null,
+    })),
+  };
+}
+
+/** يطبّع حمولة GET /courses/{id}/roster. */
+export function normalizeRoster(data = {}) {
+  return {
+    courseId: data.courseId,
+    courseTitle: data.courseTitle || 'كورس تعليمي',
+    totalLessons: num(data.totalLessons),
+    studentsCount: num(data.studentsCount),
+    avgCompletionPercent: num(data.avgCompletionPercent),
+    atRiskCount: num(data.atRiskCount),
+    students: (data.students || []).map((r) => ({
+      userId: r.userId,
+      fullName: r.fullName || 'طالب',
+      avatarUrl: resolveMediaUrl(r.avatarUrl) || null,
+      progressPercent: num(r.progressPercent),
+      completedLessons: num(r.completedLessons),
+      totalLessons: num(r.totalLessons),
+      enrolledAt: r.enrolledAt || null,
+      lastActivityAt: r.lastActivityAt || null,
+      atRisk: Boolean(r.atRisk),
+      atRiskReason: r.atRiskReason || null,
+    })),
+  };
+}
+
+/** يطبّع حمولة GET /quizzes/{id}/stats. */
+export function normalizeQuizStats(data = {}) {
+  return {
+    quizId: data.quizId,
+    quizTitle: data.quizTitle || 'اختبار',
+    status: data.status || 'DRAFT',
+    attemptsCount: num(data.attemptsCount),
+    distinctStudentsAttempted: num(data.distinctStudentsAttempted),
+    avgScorePercent: num(data.avgScorePercent),
+    enrolledStudentsCount: num(data.enrolledStudentsCount),
+    notAttempted: (data.notAttempted || []).map((s) => ({
+      studentId: s.studentId,
+      fullName: s.fullName || 'طالب',
+      avatarUrl: resolveMediaUrl(s.avatarUrl) || null,
+    })),
+  };
+}
+
 export function resolveMediaUrl(url) {
   if (!url) return '';
   if (/^https?:\/\//i.test(url)) return url;

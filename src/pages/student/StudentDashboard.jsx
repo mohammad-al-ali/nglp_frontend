@@ -23,8 +23,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import EmptyState from '@/components/ui/empty-state';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 import { notify } from '@/lib/toast';
+import { SUCCESS } from '@/lib/messages';
 import { normalizeDashboard, formatLearningTime, timeAgo } from '../../utils/constants';
 
 const ACTIVITY_META = {
@@ -40,6 +42,7 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [status, setStatus] = useState('loading'); // loading | ready | error
+  const [withdrawTarget, setWithdrawTarget] = useState(null); // { courseId, title } | null
 
   const userId = getCurrentUserId();
 
@@ -73,6 +76,17 @@ export default function StudentDashboard() {
       navigate(`/study-room/${courseId}/lesson/${firstLessonId || 1}`);
     } catch {
       navigate(`/study-room/${courseId}/lesson/1`);
+    }
+  }
+
+  async function handleWithdraw(courseId) {
+    try {
+      await api.delete('/enrollments', { params: { userId, courseId } });
+      notify.success(SUCCESS.UNENROLLED);
+      setWithdrawTarget(null);
+      fetchDashboard();
+    } catch (e) {
+      notify.error(e?.friendlyMessage || 'تعذر إلغاء التسجيل، حاول مجدداً');
     }
   }
 
@@ -113,13 +127,28 @@ export default function StudentDashboard() {
           data={data}
           onContinue={handleContinueLearning}
           onQuickEnroll={handleQuickEnroll}
+          onWithdraw={(courseId, title) => setWithdrawTarget({ courseId, title })}
         />
       )}
+
+      <ConfirmDialog
+        open={withdrawTarget !== null}
+        onOpenChange={(open) => !open && setWithdrawTarget(null)}
+        destructive
+        title="إلغاء التسجيل في الكورس"
+        description={
+          withdrawTarget
+            ? `سيتم حذف تقدّمك في دروس «${withdrawTarget.title}». يمكنك التسجيل مجدداً لاحقاً لكن سيبدأ تقدّمك من الصفر.`
+            : ''
+        }
+        confirmLabel="نعم، ألغِ التسجيل"
+        onConfirm={() => handleWithdraw(withdrawTarget.courseId)}
+      />
     </PageShell>
   );
 }
 
-function DashboardBody({ data, onContinue, onQuickEnroll }) {
+function DashboardBody({ data, onContinue, onQuickEnroll, onWithdraw }) {
   const { summary, resumeLearning, courses, recentActivity, quizPerformance, recommendations } = data;
   const isEmpty = summary.enrolledCount === 0;
 
@@ -245,6 +274,14 @@ function DashboardBody({ data, onContinue, onQuickEnroll }) {
                       تفاصيل المنهج
                     </Button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => onWithdraw(course.courseId, course.title)}
+                    className="mt-2.5 flex w-full items-center justify-center gap-1.5 text-xs font-semibold text-error underline-offset-4 hover:underline"
+                  >
+                    <Unplug className="size-3.5" />
+                    إلغاء التسجيل
+                  </button>
                 </div>
               </Card>
             ))}
